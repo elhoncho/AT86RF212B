@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "AT86RF212B_HAL.h"
 #include "AT86RF212B.h"
-#include "terminal.h"
 #include "AT86RF212B_Regesters.h"
 #include "AT86RF212B_Constants.h"
 #include "generalHAL.h"
@@ -382,7 +381,7 @@ static void AT86RF212B_PhySetChannel(){
 	if(config.state == TRX_OFF){
 		//CC_BAND (Table 9-34) 5 for 902.02MHz - 927.5 MHz
 		AT86RF212B_BitWrite(SR_CC_BAND, 5);
-		//(9.8.2) Fc[MHz] = 906[MHz] + 2[MHz] x (k – 1), for k = 1, 2, ..., 10
+		//(9.8.2) Fc[MHz] = 906[MHz] + 2[MHz] x (k ï¿½ 1), for k = 1, 2, ..., 10
 		AT86RF212B_BitWrite(SR_CHANNEL, 0);
 	}
 	else{
