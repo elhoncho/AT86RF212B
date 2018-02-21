@@ -1,12 +1,12 @@
 #include <stdint.h>
 #include <stdio.h>
-#include "MyInc/AT86RF212B_HAL.h"
-#include "MyInc/AT86RF212B.h"
-#include "MyInc/terminal.h"
-#include "MyInc/AT86RF212B_Regesters.h"
-#include "MyInc/AT86RF212B_Constants.h"
-#include "MyInc/generalHAL.h"
-#include "MyInc/errors_and_logging.h"
+#include "AT86RF212B_HAL.h"
+#include "AT86RF212B.h"
+#include "terminal.h"
+#include "AT86RF212B_Regesters.h"
+#include "AT86RF212B_Constants.h"
+#include "generalHAL.h"
+#include "errors_and_logging.h"
 
 #define MSKMODE_SHOW_INT
 #define MSKMODE_DONT_SHOW_INT

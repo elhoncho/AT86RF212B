@@ -6,8 +6,8 @@
  */
 
 #include <stdio.h>
-#include "MyInc/errors_and_logging.h"
-#include "MyInc/terminal.h"
+#include "errors_and_logging.h"
+#include "terminal.h"
 
 #define MIN_LOG_LVL LOG_LVL_DEBUG
 

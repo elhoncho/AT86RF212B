@@ -6,9 +6,9 @@
  */
 
 #include "stm32f4xx_hal.h"
-#include "MyInc/AT86RF212B.h"
-#include "MyInc/generalHAL.h"
-#include "MyInc/errors_and_logging.h"
+#include "AT86RF212B.h"
+#include "generalHAL.h"
+#include "errors_and_logging.h"
 
 #define SPI_NSS_PORT GPIOG
 #define SPI_NSS_PIN GPIO_PIN_15

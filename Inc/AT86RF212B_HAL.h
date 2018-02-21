@@ -8,7 +8,7 @@
 #ifndef MYINC_AT86RF212B_HAL_H_
 #define MYINC_AT86RF212B_HAL_H_
 
-#include "MyInc/AT86RF212B.h"
+#include "AT86RF212B.h"
 
 void AT86RF212B_OpenHAL(uint32_t time_out);
 void AT86RF212B_CloseHAL();

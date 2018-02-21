@@ -13,14 +13,14 @@
 #include<string.h>
 #include<stdlib.h>
 #include<stdio.h>
-#include "MyInc/terminal.h"
-#include "MyInc/terminalHAL.h"
-#include "MyInc/AT86RF212B.h"
-#include "MyInc/generalHAL.h"
-#include "MyInc/errors_and_logging.h"
+#include "terminal.h"
+#include "terminalHAL.h"
+#include "AT86RF212B.h"
+#include "generalHAL.h"
+#include "errors_and_logging.h"
 
-#include "MyInc/AT86RF212B_Regesters.h"
-#include "MyInc/AT86RF212B_Constants.h"
+#include "AT86RF212B_Regesters.h"
+#include "AT86RF212B_Constants.h"
 
 #define MAX_STR_LEN 32
 
