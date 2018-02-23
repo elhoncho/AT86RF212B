@@ -13,6 +13,9 @@
 #include "AT86RF212B_Settings.h"
 
 #if STM32
+
+#include "stm32f4xx_hal.h"
+
 #define SPI_NSS_PORT GPIOG
 #define SPI_NSS_PIN GPIO_PIN_15
 
@@ -53,10 +56,6 @@ SPI_HandleTypeDef hspi;
 void HAL_Callback();
 
 #endif
-
-
-
-uint32_t timeout = 1000;
 
 void AT86RF212B_WritePinHAL(uint8_t pin, uint8_t state){
 	uint16_t GPIO_PIN;
@@ -249,11 +248,12 @@ void AT86RF212B_FrameWriteHAL(uint8_t * pTxData, uint16_t size){
 
 #if STM32
 	uint8_t pRxData[128];
+	uint8_t tmpData = 0x20;
 	HAL_GPIO_WritePin(SPI_NSS_PORT, SPI_NSS_PIN, GPIO_PIN_RESET);
 	//Transmit the Command
-	HAL_SPI_Transmit(&hspi , 0x20, 1, timeout);
+	HAL_SPI_Transmit(&hspi , &tmpData, 1, timeout);
 	//Transmit the PHR
-	HAL_SPI_Transmit(&hspi , &size, 1, timeout);
+	HAL_SPI_Transmit(&hspi , (uint8_t*)&size, 1, timeout);
 	HAL_SPI_TransmitReceive(&hspi , pTxData, pRxData, size, timeout);
 	//TODO: This probably needs to be changed, could lock up here.
 	while(hspi.State == HAL_SPI_STATE_BUSY);
