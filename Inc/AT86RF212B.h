@@ -124,5 +124,7 @@ void AT86RF212B_TRX_Reset();
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length);
 //TODO: Remove this it is a tmp function for testing only
 void AT86RF212B_TestSleep();
+//TODO: Remove this it should be static
+uint8_t AT86RF212B_BitRead (uint8_t addr, uint8_t mask, uint8_t pos);
 
 #endif /* MYINC_AT86RF212B_H_ */

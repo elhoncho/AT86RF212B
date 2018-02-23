@@ -43,6 +43,7 @@ static void WriteRegister(char *arg1, char *arg2);
 static void GetIDs(char *arg1, char *arg2);
 static void Reset(char *arg1, char *arg2);
 static void TestSleep(char *arg1, char *arg2);
+static void TestBit(char *arg1, char *arg2);
 
 static const struct commandStruct commands[] ={
     {"clear", &CmdClear, "Clears the screen"},
@@ -54,8 +55,15 @@ static const struct commandStruct commands[] ={
 	{"id", &GetIDs, "get id's"},
 	{"reset", &Reset, "reset from active state"},
 	{"sleep", &TestSleep, "Test sleep state"},
+	{"bt", &TestBit, "Test a bit of a reg"},
     {"",0,""} //End of commands indicator. Must be last.
 };
+
+static void TestBit(char *arg1, char *arg2){
+	uint8_t tmpStr[MAX_STR_LEN];
+	sprintf(tmpStr, "%i\r\n", AT86RF212B_BitRead(arg1, 0, arg2));
+	TerminalWrite(tmpStr);
+}
 
 static void TestSleep(char *arg1, char *arg2){
 	AT86RF212B_TestSleep();
