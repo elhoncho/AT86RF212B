@@ -7,12 +7,24 @@
 
 
 #include <stdint.h>
+#include <stdio.h>
 #include "terminal.h"
+#include "AT86RF212B_Settings.h"
+
+#if STM32
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
 
+#define ECHO_INPUT 1
+#endif
+
+#if RASPBERRY_PI
+#define ECHO_INPUT 0
+#endif
+
 //Max amount of characters to buffer on the rx
 #define BUFFER_LENGTH 25
+
 
 struct circleBuffer{
     volatile uint8_t head;
@@ -28,10 +40,17 @@ static int8_t pushToBuffer(struct circleBuffer *b, const char inChar);
 static int8_t popFromBuffer(struct circleBuffer *b, char *outChar);
 
 void terminalWriteHAL(char *txStr){
+#if RASPBERRY_PI
+	printf("%s", txStr);
+	fflush(stdout);
+#endif
+
+#if STM32
 	if(hUsbDeviceHS.dev_state == USBD_STATE_CONFIGURED){
 		//TODO: Fix this, can lock up here
 		while(CDC_Transmit_HS((uint8_t*)txStr, strlen(txStr)) == USBD_BUSY);
 	}
+#endif
 }
 
 int8_t terminalReadRXCharHAL(){
@@ -48,8 +67,10 @@ void terminalWriteRXCharHAL(char rxChar){
 	pushToBuffer(&rxBuffer, rxChar);
 
 	char tmpStr[2] = {rxChar, '\0'};
-	terminalWriteHAL(tmpStr);
-	if(strcmp(tmpStr, "\r") == 0){
+	if(ECHO_INPUT){
+		terminalWriteHAL(tmpStr);
+	}
+	if(rxChar == '\r' || rxChar == '\n'){
 		newCmd = 1;
 	}
 }

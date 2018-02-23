@@ -5,11 +5,14 @@
  *      Author: owner
  */
 
-#include "stm32f4xx_hal.h"
+#include <string.h>
+#include <stdint.h>
 #include "AT86RF212B.h"
 #include "generalHAL.h"
 #include "errors_and_logging.h"
+#include "AT86RF212B_Settings.h"
 
+#if STM32
 #define SPI_NSS_PORT GPIOG
 #define SPI_NSS_PIN GPIO_PIN_15
 
@@ -31,9 +34,59 @@
 uint32_t timeout = 1000;
 extern SPI_HandleTypeDef hspi3;
 SPI_HandleTypeDef hspi;
+#endif
+
+#if RASPBERRY_PI
+#include "wiringPi.h"
+#include "wiringPiSPI.h"
+
+#define SPI_NSS_PIN 3
+#define CLKM_PIN 0
+#define IRQ_PIN 6
+#define SLP_TR_PIN 5
+#define RST_PIN 7
+#define DIG2_PIN 2
+
+#define SPI_CLK 500000
+#define SPI_CHANNEL 1
+
+void HAL_Callback();
+
+#endif
+
+
+
+uint32_t timeout = 1000;
 
 void AT86RF212B_WritePinHAL(uint8_t pin, uint8_t state){
 	uint16_t GPIO_PIN;
+
+#if RASPBERRY_PI
+	switch(pin){
+		case AT86RF212B_PIN_CLKM:
+			GPIO_PIN = CLKM_PIN;
+			break;
+		case AT86RF212B_PIN_IRQ:
+			GPIO_PIN = IRQ_PIN;
+			break;
+		case AT86RF212B_PIN_SLP_TR:
+			GPIO_PIN = SLP_TR_PIN;
+			break;
+		case AT86RF212B_PIN_RST:
+			GPIO_PIN = RST_PIN;
+			break;
+		case AT86RF212B_PIN_DIG2:
+			GPIO_PIN = DIG2_PIN;
+			break;
+		default:
+			ASSERT(0);
+			LOG(LOG_LVL_ERROR, "Unknown Pin");
+			return;
+	}
+	(state) ? digitalWrite(GPIO_PIN, HIGH) : digitalWrite(GPIO_PIN, LOW);
+#endif
+
+#if STM32
 	GPIO_TypeDef * GPIO_PORT;
 	switch(pin){
 		case AT86RF212B_PIN_CLKM:
@@ -62,11 +115,39 @@ void AT86RF212B_WritePinHAL(uint8_t pin, uint8_t state){
 			return;
 	}
 	(state) ? HAL_GPIO_WritePin(GPIO_PORT, GPIO_PIN, GPIO_PIN_SET) : HAL_GPIO_WritePin(GPIO_PORT, GPIO_PIN, GPIO_PIN_RESET);
+#endif
 	return;
 }
 
 uint8_t AT86RF212B_ReadPinHAL(uint8_t pin){
 	uint16_t GPIO_PIN;
+
+#if RASPBERRY_PI
+	switch(pin){
+		case AT86RF212B_PIN_CLKM:
+			GPIO_PIN = CLKM_PIN;
+			break;
+		case AT86RF212B_PIN_IRQ:
+			GPIO_PIN = IRQ_PIN;
+			break;
+		case AT86RF212B_PIN_SLP_TR:
+			GPIO_PIN = SLP_TR_PIN;
+			break;
+		case AT86RF212B_PIN_RST:
+			GPIO_PIN = RST_PIN;
+			break;
+		case AT86RF212B_PIN_DIG2:
+			GPIO_PIN = DIG2_PIN;
+			break;
+		default:
+			ASSERT(0);
+			LOG(LOG_LVL_ERROR, "Unknown Pin");
+			return 0;
+	}
+	return digitalRead(GPIO_PIN);
+#endif
+
+#if STM32
 	GPIO_TypeDef * GPIO_PORT;
 	switch(pin){
 		case AT86RF212B_PIN_CLKM:
@@ -95,14 +176,37 @@ uint8_t AT86RF212B_ReadPinHAL(uint8_t pin){
 			return 0;
 	}
 	return HAL_GPIO_ReadPin(GPIO_PORT, GPIO_PIN);
+#endif
 }
 
 //TODO: Change the returns from void to an indicator, that means the functions need to validate a successful operation or not
 void AT86RF212B_OpenHAL(uint32_t time_out){
+	timeout = time_out;
+
+#if RASPBERRY_PI
+	wiringPiSetup ();
+
+	pinMode(SPI_NSS_PIN, OUTPUT);
+	pinMode(CLKM_PIN, INPUT);
+	pinMode(IRQ_PIN, INPUT);
+	pinMode(SLP_TR_PIN, OUTPUT);
+	pinMode(RST_PIN, OUTPUT);
+	pinMode(DIG2_PIN, INPUT);
+
+	digitalWrite(SPI_NSS_PIN, HIGH);
+	digitalWrite(SLP_TR_PIN, LOW);
+
+	wiringPiSPISetup(SPI_CHANNEL, SPI_CLK);
+
+	wiringPiISR(IRQ_PIN, INT_EDGE_RISING, &HAL_Callback);
+#endif
+
+#if STM32
 	hspi = hspi3;
 	timeout = time_out;
 	HAL_GPIO_WritePin(SPI_NSS_PORT, SPI_NSS_PIN, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(SLP_TR_PORT, SLP_TR_PIN, GPIO_PIN_RESET);
+#endif
 }
 
 void AT86RF212B_CloseHAL(){
@@ -115,14 +219,35 @@ void AT86RF212B_CloseHAL(){
 //pRxValue = pointer to rx data array
 //size = amount of data to be sent and received
 void AT86RF212B_RegReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t size){
+#if RASPBERRY_PI
+	digitalWrite(SPI_NSS_PIN, LOW);
+	wiringPiSPIDataRW(SPI_CHANNEL, pTxData, size);
+	digitalWrite(SPI_NSS_PIN, HIGH);
+	memcpy(pRxData, pTxData, size);
+#endif
+
+#if STM32
 	HAL_GPIO_WritePin(SPI_NSS_PORT, SPI_NSS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_TransmitReceive(&hspi , pTxData, pRxData, size, timeout);
 	//TODO: This probably needs to be changed, could lock up here.
 	while(hspi.State == HAL_SPI_STATE_BUSY);
 	HAL_GPIO_WritePin(SPI_NSS_PORT, SPI_NSS_PIN, GPIO_PIN_SET);
+#endif
 }
 
 void AT86RF212B_FrameWriteHAL(uint8_t * pTxData, uint16_t size){
+#if RASPBERRY_PI
+	uint8_t tmpData = 0x20;
+	digitalWrite(SPI_NSS_PIN, LOW);
+	//Transmit the Command
+	wiringPiSPIDataRW(SPI_CHANNEL, &tmpData, 1);
+	//Transmit the PHR
+	wiringPiSPIDataRW(SPI_CHANNEL, (unsigned char*)&size, 1);
+	wiringPiSPIDataRW(SPI_CHANNEL, pTxData, size);
+	digitalWrite(SPI_NSS_PIN, HIGH);
+#endif
+
+#if STM32
 	uint8_t pRxData[128];
 	HAL_GPIO_WritePin(SPI_NSS_PORT, SPI_NSS_PIN, GPIO_PIN_RESET);
 	//Transmit the Command
@@ -133,18 +258,34 @@ void AT86RF212B_FrameWriteHAL(uint8_t * pTxData, uint16_t size){
 	//TODO: This probably needs to be changed, could lock up here.
 	while(hspi.State == HAL_SPI_STATE_BUSY);
 	HAL_GPIO_WritePin(SPI_NSS_PORT, SPI_NSS_PIN, GPIO_PIN_SET);
+#endif
 }
 
 uint32_t AT86RF212B_SysTickMsHAL(){
+#if RASPBERRY_PI
+	return millis();
+#endif
+
+#if STM32
 	return HAL_GetTick();
+#endif
 }
 
+#if RASPBERRY_PI
+void HAL_Callback(){
+	AT86RF212B_ISR_Callback();
+}
+#endif
+
+#if STM32
 //This function overrides the default callback for the STM32 HAL and its name should not be changed
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	if(GPIO_Pin == IRQ_PIN){
 		AT86RF212B_ISR_Callback();
 	}
 }
+#endif
+
 void AT86RF212B_DelayHAL(uint8_t time, AT86RF212B_Config config){
 	switch(time){
 		case AT86RF212B_t7:

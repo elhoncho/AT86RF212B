@@ -8,6 +8,8 @@
 #ifndef MYINC_AT86RF212B_H_
 #define MYINC_AT86RF212B_H_
 
+#include <stdint.h>
+
 typedef struct{
 	//Current State
 	uint8_t state;
