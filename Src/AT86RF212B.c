@@ -6,6 +6,7 @@
 #include "AT86RF212B_Constants.h"
 #include "generalHAL.h"
 #include "errors_and_logging.h"
+#include "AT86RF212B_Settings.h"
 
 #define MSKMODE_SHOW_INT
 #define MSKMODE_DONT_SHOW_INT
@@ -61,31 +62,31 @@ void AT86RF212B_Open(){
 	//Initial State
 	config.state = P_ON;
 	//Change this to set the RF mode
-	config.phyMode = AT86RF212B_O_QPSK_100;
+	config.phyMode = AT86RF212B_PHY_MODE;
 	//scrambler configuration for O-QPSK_{400,1000}; values { 0: disabled, 1: enabled (default)}.
-	config.scramen = 1;
+	config.scramen = AT86RF212B_SCRAMEN;
 	//transmit signal pulse shaping for O-QPSK_{250,500,1000}; values {0 : half-sine filtering (default), 1 : RC-0.8 filtering}.
-	config.rcen = 0;
+	config.rcen = AT86RF212B_RCEN;
 	//Set the TX power level (Table 9-15) 0x03 = 0dBm
-	config.txPower = 0x03;
+	config.txPower = AT86RF212B_TX_POWER;
 	//Set the RX sensitivity RX threshold = RSSI_BAS_VAL + rxSensLvl * 3
 	//rxSensLvl = 0 - 15, 0 = max sensitivity
-	config.rxSensLvl = 0;
+	config.rxSensLvl = AT86RF212B_RX_SENSE_LVL;
 	//Enable TX CRC generation 1 = on 0 = off
-	config.txCrc = 1;
+	config.txCrc = AT86RF212B_TX_CRC;
 	//Address Filtering
-	config.panId_7_0 = 0x01;
-	config.panId_15_8 = 0x00;
-	config.shortAddr_7_0 = 0x01;
-	config.shortAddr_15_8 = 0x00;
-	config.extAddr_7_0 = 0x01;
-	config.extAddr_15_8 = 0x00;
-	config.extAddr_23_16 = 0x01;
-	config.extAddr_31_24 = 0x00;
-	config.extAddr_39_32 = 0x01;
-	config.extAddr_47_40 = 0x00;
-	config.extAddr_55_48 = 0x01;
-	config.extAddr_63_56 = 0x00;
+	config.panId_7_0 = AT86RF212B_PAN_ID_7_0;
+	config.panId_15_8 = AT86RF212B_PAN_ID_15_8;
+	config.shortAddr_7_0 = AT86RF212B_SHORT_ADDR_7_0;
+	config.shortAddr_15_8 = AT86RF212B_SHORT_ADDR_15_8;
+	config.extAddr_7_0 = AT86RF212B_EXT_ADDR_7_0;
+	config.extAddr_15_8 = AT86RF212B_EXT_ADDR_15_8;
+	config.extAddr_23_16 = AT86RF212B_EXT_ADDR_23_16;
+	config.extAddr_31_24 = AT86RF212B_EXT_ADDR_31_24;
+	config.extAddr_39_32 = AT86RF212B_EXT_ADDR_39_32;
+	config.extAddr_47_40 = AT86RF212B_EXT_ADDR_47_40;
+	config.extAddr_55_48 = AT86RF212B_EXT_ADDR_55_48;
+	config.extAddr_63_56 = AT86RF212B_EXT_ADDR_63_56;
 
 	AT86RF212B_OpenHAL(1000);
 
@@ -94,11 +95,11 @@ void AT86RF212B_Open(){
 	//Run power on reset sequence
 	AT86RF212B_PowerOnReset();
 
-	//AT86RF212B_SetPhyMode();
+	AT86RF212B_SetPhyMode();
 
-	//AT86RF212B_PhySetChannel();
+	AT86RF212B_PhySetChannel();
 
-	//PhyStateTrxOffToPllOn();
+	PhyStateTrxOffToPllOn();
 }
 
 void AT86RF212B_ISR_Callback(){
@@ -274,30 +275,21 @@ static void AT86RF212B_PowerOnReset(){
 
 //TODO: This should be static
 void AT86RF212B_ID(){
-	/* AT86RF212::P_ON */
-	if(config.state == P_ON){
-		config.partid = AT86RF212B_RegRead(RG_PART_NUM);
-		config.version = AT86RF212B_RegRead(RG_VERSION_NUM);
-		config.manid0 = AT86RF212B_RegRead(RG_MAN_ID_0);
-		config.manid1 = AT86RF212B_RegRead(RG_MAN_ID_1);
+	config.partid = AT86RF212B_RegRead(RG_PART_NUM);
+	config.version = AT86RF212B_RegRead(RG_VERSION_NUM);
+	config.manid0 = AT86RF212B_RegRead(RG_MAN_ID_0);
+	config.manid1 = AT86RF212B_RegRead(RG_MAN_ID_1);
 
-		if(logging){
-			char tmpStr[32];
-			sprintf(tmpStr, "Part ID: 0x%02X\r\n", config.partid);
-			LOG(LOG_LVL_DEBUG, tmpStr);
-			sprintf(tmpStr, "Version: 0x%02X\r\n", config.version);
-			LOG(LOG_LVL_DEBUG, tmpStr);
-			sprintf(tmpStr, "ManID0:  0x%02X\r\n", config.manid0);
-			LOG(LOG_LVL_DEBUG, tmpStr);
-			sprintf(tmpStr, "ManID1:  0x%02X\r\n", config.manid1);
-			LOG(LOG_LVL_DEBUG, tmpStr);
-		}
-	}
-	else{
-		ASSERT(0);
-		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
-		}
+	if(logging){
+		char tmpStr[32];
+		sprintf(tmpStr, "Part ID: 0x%02X\r\n", config.partid);
+		LOG(LOG_LVL_DEBUG, tmpStr);
+		sprintf(tmpStr, "Version: 0x%02X\r\n", config.version);
+		LOG(LOG_LVL_DEBUG, tmpStr);
+		sprintf(tmpStr, "ManID0:  0x%02X\r\n", config.manid0);
+		LOG(LOG_LVL_DEBUG, tmpStr);
+		sprintf(tmpStr, "ManID1:  0x%02X\r\n", config.manid1);
+		LOG(LOG_LVL_DEBUG, tmpStr);
 	}
 }
 
