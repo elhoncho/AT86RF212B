@@ -6,6 +6,8 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include "errors_and_logging.h"
 #include "terminal.h"
 
@@ -26,4 +28,5 @@ void AssertError(char * fileName, int lineNumber){
 	LOG(LOG_LVL_ERROR, fileName);
 	sprintf(tmpStr, "\r\nOn line: %d\r\n", lineNumber);
 	LOG(LOG_LVL_ERROR, tmpStr);
+	//exit(0);
 }

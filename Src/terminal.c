@@ -176,11 +176,16 @@ void TerminalRead(){
         if(strlen(arg[0]) >= 1){
             while(commands[i].execute){
                 if(strcmp(arg[0], commands[i].name) == 0){
-                    strcpy(tmpStr, "\r\n");
-                    TerminalWrite(tmpStr);
+                	//Write a new line
+                    //strcpy(tmpStr, "\r\n");
+                    //TerminalWrite(tmpStr);
 
+                    //Execute Command
                     commands[i].execute(arg[1], arg[2]);
-                    strcpy(tmpStr, ">");
+
+                    //Write prompt char >
+                    tmpStr[0] = '>';
+                    tmpStr[1] = '\0';
                     TerminalWrite(tmpStr);
                     i = 0;
                     break;

@@ -94,15 +94,11 @@ void AT86RF212B_Open(){
 	//Run power on reset sequence
 	AT86RF212B_PowerOnReset();
 
-	AT86RF212B_SetPhyMode();
+	//AT86RF212B_SetPhyMode();
 
-	AT86RF212B_PhySetChannel();
+	//AT86RF212B_PhySetChannel();
 
-	PhyStateTrxOffToPllOn();
-
-	DelayMs(1000);
-	uint8_t tmpStr[128] = "Hello World!\r\n";
-	AT86RF212B_TxData(tmpStr, 14);
+	//PhyStateTrxOffToPllOn();
 }
 
 void AT86RF212B_ISR_Callback(){
