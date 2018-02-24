@@ -15,7 +15,7 @@
 //------------Private Function Prototypes----------------//
 //TODO:These should be uncommented as they are static
 //static void AT86RF212B_ID();
-static void AT86RF212B_PowerOnReset();
+static void 	AT86RF212B_PowerOnReset();
 //static void AT86RF212B_TRX_Reset();
 static void 	AT86RF212B_StateMachineReset();
 static void 	AT86RF212B_BitWrite(uint8_t reg, uint8_t mask, uint8_t pos, uint8_t value);
@@ -37,7 +37,7 @@ static uint8_t 	IsStateTxBusy();
 static uint8_t 	IsStateRxBusy();
 static uint8_t 	IsStateBusy();
 static uint8_t 	IsStateCmd();
-static void 	AT86RF212B_CheckForIRQ();
+static uint8_t 	AT86RF212B_CheckForIRQ();
 static void 	AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length);
 static void 	AT86RF212B_Delay(uint8_t time);
 
@@ -124,7 +124,9 @@ void AT86RF212B_Main(){
 		case SLEEP:
 			break;
 		case RX_ON:
-			AT86RF212B_CheckForIRQ();
+			if(AT86RF212B_CheckForIRQ() == TRX_IRQ_TRX_END){
+				AT86RF212B_FrameRead();
+			}
 			break;
 		case PLL_ON:
 			PhyStateToRxOn();
@@ -274,18 +276,24 @@ uint8_t	AT86RF212B_FrameRead(){
 
 	uint8_t length = AT86RF212B_FrameLengthRead();
 	if(length <= 128){
-		uint8_t pTxData[length+5];
-		uint8_t pRxData[length+5];
+		//Length received is the length of the data plus two bytes for the command and PRI bytes
+		//add 3 to the length for the ED LQI and RX_STATUS bytes
+		uint8_t nLength = length+3;
+		uint8_t pTxData[nLength];
+		uint8_t pRxData[nLength];
 
 		pTxData[0] = 0x20;
 
-		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+5);
+		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 		//Energy Detection (ED) pRxData[length]
 		//Link Quality Indication (LQI) pRxData[length+1]
 		//RX_STATUS pRxData[length+2]
 		if(logging){
 			//First char is the PHY_STATUS bit
+			pRxData[length] = 0;
+			LOG(LOG_LVL_DEBUG, "\r\nData Received: \r\n");
 			LOG(LOG_LVL_DEBUG, (char *)&pRxData[2]);
+			LOG(LOG_LVL_DEBUG, "\r\n>");
 		}
 	}
 	else{
@@ -654,7 +662,7 @@ void AT86RF212B_TestSleep(){
 	AT86RF212B_WaitForIRQ(TRX_IRQ_AWAKE_END);
 }
 
-static void AT86RF212B_CheckForIRQ(){
+static uint8_t AT86RF212B_CheckForIRQ(){
 	if(interupt){
 		//Clear the interrupt flag
 		interupt = 0;
@@ -666,8 +674,9 @@ static void AT86RF212B_CheckForIRQ(){
 			sprintf(tmpStr, "IRQ Recieved: %d\r\n", irqState);
 			LOG(LOG_LVL_ERROR, tmpStr);
 		}
+		return irqState;
 	}
-	return;
+	return 0;
 }
 
 static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){

@@ -70,7 +70,7 @@ static void ReadFrame(char *arg1, char *arg2){
 	if(logging){
 		char tmpStr[MAX_STR_LEN];
 		TerminalWrite("Frame Data:\r\n");
-		sprintf(tmpStr, "%i \r\n", AT86RF212B_FrameRead());
+		sprintf(tmpStr, "\r\nLength: %i\r\n", AT86RF212B_FrameRead());
 		TerminalWrite(tmpStr);
 	}
 }
