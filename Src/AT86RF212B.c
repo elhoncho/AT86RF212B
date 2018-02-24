@@ -259,8 +259,8 @@ uint8_t	AT86RF212B_FrameRead(){
 	//if(AT86RF212B_BitRead(SR_RX_CRC_VALID)){
 	uint8_t length = AT86RF212B_FrameLengthRead();
 	if(length <= 128){
-		uint8_t pTxData[length+5];
-		uint8_t pRxData[length+5];
+		uint8_t pTxData[132] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+		uint8_t pRxData[132] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 
 		pTxData[0] = 0x20;
 
@@ -285,7 +285,7 @@ static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
 	pTxData[0] = 0x60;
 	memcpy(&pTxData[1], frame, length);
 
-	AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, length);
+	AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, length+1);
 }
 
 static void 	AT86RF212B_IrqInit (){
