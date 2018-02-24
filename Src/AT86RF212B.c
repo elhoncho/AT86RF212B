@@ -269,7 +269,8 @@ uint8_t	AT86RF212B_FrameRead(){
 
 		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length);
 		if(logging){
-			LOG(LOG_LVL_DEBUG, (char *)pRxData);
+			//First char is the PHY_STATUS bit
+			LOG(LOG_LVL_DEBUG, (char *)&pRxData[1]);
 		}
 	}
 	else{
@@ -282,13 +283,14 @@ uint8_t	AT86RF212B_FrameRead(){
 }
 
 static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
-	uint8_t pTxData[length+1];
+	uint8_t pTxData[length+2];
 	uint8_t pRxData[7] = {0};
 
 	pTxData[0] = 0x60;
-	memcpy(&pTxData[1], frame, length);
+	pTxData[1] = length;
+	memcpy(&pTxData[2], frame, length);
 
-	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+1);
+	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+2);
 }
 
 static void 	AT86RF212B_IrqInit (){
