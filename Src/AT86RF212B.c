@@ -267,12 +267,12 @@ uint8_t	AT86RF212B_FrameRead(){
 
 	uint8_t length = AT86RF212B_FrameLengthRead();
 	if(length <= 128){
-		uint8_t pTxData[length+3];
-		uint8_t pRxData[length+3];
+		uint8_t pTxData[length+5];
+		uint8_t pRxData[length+5];
 
 		pTxData[0] = 0x20;
 
-		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+3);
+		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+5);
 		//Energy Detection (ED) pRxData[length]
 		//Link Quality Indication (LQI) pRxData[length+1]
 		//RX_STATUS pRxData[length+2]
@@ -291,14 +291,17 @@ uint8_t	AT86RF212B_FrameRead(){
 }
 
 static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
-	uint8_t pTxData[length+2];
-	uint8_t pRxData[length+2];
+	uint8_t nLength = length+2;
+	uint8_t pTxData[nLength];
+	uint8_t pRxData[nLength];
 
 	pTxData[0] = 0x60;
-	pTxData[1] = length;
+	//So strange but the length here has to be the length of the data plus 2 for the command and PHR bytes
+	//If this is not length+2 then the last two characters will get cut off
+	pTxData[1] = nLength;
 	memcpy(&pTxData[2], frame, length);
 
-	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+2);
+	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 }
 
 static void 	AT86RF212B_IrqInit (){
