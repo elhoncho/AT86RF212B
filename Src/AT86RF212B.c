@@ -99,6 +99,9 @@ void AT86RF212B_Open(){
 	AT86RF212B_SetPhyMode();
 
 	AT86RF212B_PhySetChannel();
+
+	//TODO: This needs to change to TRX_OFF
+	PhyStateToRxOn();
 }
 
 void AT86RF212B_ISR_Callback(){
