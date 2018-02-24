@@ -258,7 +258,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 }
 #endif
 
-void AT86RF212B_DelayHAL(uint8_t time, AT86RF212B_Config config){
+void AT86RF212B_Delay(uint8_t time, AT86RF212B_Config config){
 	switch(time){
 		case AT86RF212B_t7:
 			//t7 	SLP_TR pulse width

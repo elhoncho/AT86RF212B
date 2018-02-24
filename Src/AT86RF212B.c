@@ -19,15 +19,8 @@ static void AT86RF212B_PowerOnReset();
 //static void AT86RF212B_TRX_Reset();
 static void 	AT86RF212B_StateMachineReset();
 static void 	AT86RF212B_BitWrite(uint8_t reg, uint8_t mask, uint8_t pos, uint8_t value);
-static void 	AT86RF212B_AES_Io (uint8_t mode, uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata);
-static void 	AT86RF212B_AES_Read (uint8_t cmd, uint8_t *odata);
-static void 	AT86RF212B_AES_Write (uint8_t cmd, uint8_t start, uint8_t *idata);
-static void 	AT86RF212B_AES_Wrrd (uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata);
-static uint8_t 	AT86RF212B_FrameLengthRead();
-static uint8_t 	AT86RF212B_FrameReadBlm (uint8_t *d);
 static void 	AT86RF212B_IrqInit ();
-static void 	AT86RF212B_SramRead (uint8_t addr, uint8_t length, uint8_t *data);
-static void 	AT86RF212B_Sramrite (uint8_t addr, uint8_t length, uint8_t *data);
+static uint8_t 	AT86RF212B_FrameLengthRead();
 static void 	AT86RF212B_SetPhyMode();
 static void 	AT86RF212B_PhySetChannel();
 static void 	PhyCalibrateFTN();
@@ -45,7 +38,19 @@ static uint8_t 	IsStateRxBusy();
 static uint8_t 	IsStateBusy();
 static uint8_t 	IsStateCmd();
 static void 	AT86RF212B_CheckForIRQ();
-static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length);
+static void 	AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length);
+static void 	AT86RF212B_Delay(uint8_t time);
+
+/*
+static void 	AT86RF212B_AES_Io (uint8_t mode, uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata);
+static void 	AT86RF212B_AES_Read (uint8_t cmd, uint8_t *odata);
+static void 	AT86RF212B_AES_Write (uint8_t cmd, uint8_t start, uint8_t *idata);
+static void 	AT86RF212B_AES_Wrrd (uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata);
+static uint8_t 	AT86RF212B_FrameReadBlm (uint8_t *d);
+static void 	AT86RF212B_SramRead (uint8_t addr, uint8_t length, uint8_t *data);
+static void 	AT86RF212B_Sramrite (uint8_t addr, uint8_t length, uint8_t *data);
+ */
+
 //-----------External Variables--------------------//
 extern uint8_t logging;
 
@@ -92,7 +97,7 @@ void AT86RF212B_Open(){
 	AT86RF212B_OpenHAL(1000);
 
 	//Time to wait after power on
-	AT86RF212B_DelayHAL(AT86RF212B_tTR1, config);
+	AT86RF212B_Delay(AT86RF212B_tTR1);
 	//Run power on reset sequence
 	AT86RF212B_PowerOnReset();
 
@@ -178,7 +183,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 		AT86RF212B_FrameWrite(frame, length);
 
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
-		AT86RF212B_DelayHAL(AT86RF212B_t7, config);
+		AT86RF212B_Delay(AT86RF212B_t7);
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
 		PhyStateToPllOn();
@@ -227,6 +232,7 @@ uint8_t AT86RF212B_BitRead (uint8_t addr, uint8_t mask, uint8_t pos){
 	}
 }
 
+/*
 static void 	AT86RF212B_AES_Io (uint8_t mode, uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata){
 
 }
@@ -249,6 +255,7 @@ static void 	AT86RF212B_SramRead (uint8_t addr, uint8_t length, uint8_t *data){
 static void 	AT86RF212B_Sramrite (uint8_t addr, uint8_t length, uint8_t *data){
 
 }
+*/
 
 static uint8_t 	AT86RF212B_FrameLengthRead(){
 	uint8_t pTxData[2] = {0x20, 0};
@@ -328,7 +335,7 @@ static void AT86RF212B_PowerOnReset(){
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_RST, AT86RF212B_PIN_STATE_HIGH);
 		DelayUs(400);
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_RST, AT86RF212B_PIN_STATE_LOW);
-		AT86RF212B_DelayHAL(AT86RF212B_t10, config);
+		AT86RF212B_Delay(AT86RF212B_t10);
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_RST, AT86RF212B_PIN_STATE_HIGH);
 		//Turn off CLKM clock (available as a clock reference if needed)
 		AT86RF212B_RegWrite(RG_TRX_CTRL_0, 0x18);
@@ -343,7 +350,7 @@ static void AT86RF212B_PowerOnReset(){
 		//Change to TRX_OFF state
 		AT86RF212B_RegWrite(RG_TRX_STATE, CMD_FORCE_TRX_OFF);
 
-		AT86RF212B_DelayHAL(AT86RF212B_tTR13, config);
+		AT86RF212B_Delay(AT86RF212B_tTR13);
 
 		if(logging){
 			char tmpStr[32];
@@ -394,10 +401,10 @@ void AT86RF212B_TRX_Reset(){
 	if(IsStateActive()){
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_RST, AT86RF212B_PIN_STATE_LOW);
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
-		AT86RF212B_DelayHAL(AT86RF212B_t10, config);
+		AT86RF212B_Delay(AT86RF212B_t10);
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_RST, AT86RF212B_PIN_STATE_HIGH);
 		AT86RF212B_IrqInit();
-		AT86RF212B_DelayHAL(AT86RF212B_tTR13, config);
+		AT86RF212B_Delay(AT86RF212B_tTR13);
 		/* AT86RF212::TRX_OFF */
 		StateChangeCheck(TRX_OFF);
 	}
@@ -423,7 +430,7 @@ void PhyStateToPllOn(){
 	else if(IsStatePllActive()){
 		/* AT86RF212::[PLL_ACTIVE] */
 		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
-		AT86RF212B_DelayHAL(AT86RF212B_tTR9, config);
+		AT86RF212B_Delay(AT86RF212B_tTR9);
 		StateChangeCheck(PLL_ON);
 	}
 	else if(IsStateBusy()){
@@ -435,7 +442,7 @@ void PhyStateToPllOn(){
 	else if(config.state == BUSY_RX_AACK){
 		/* AT86RF212::BUSY_RX_AACK */
 		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
-		AT86RF212B_DelayHAL(AT86RF212B_tFrame, config);
+		AT86RF212B_Delay(AT86RF212B_tFrame);
 		StateChangeCheck(PLL_ON);
 	}
 	//TODO: May need to add a state to force to pll on, force to pll on is an unimplemented transition in the programmers guide
@@ -456,13 +463,13 @@ void PhyStateToRxOn(){
 	/* AT86RF212::TRX_OFF */
 	if(config.state == TRX_OFF){
 		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_ON);
-		AT86RF212B_DelayHAL(AT86RF212B_tTR6, config);
+		AT86RF212B_Delay(AT86RF212B_tTR6);
 		StateChangeCheck(RX_ON);
 	}
 	 /* AT86RF212::PLL_ON */
 	else if(config.state ==  PLL_ON){
 		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_ON);
-		AT86RF212B_DelayHAL(AT86RF212B_tTR8, config);
+		AT86RF212B_Delay(AT86RF212B_tTR8);
 		StateChangeCheck(RX_ON);
 	}
 	/* AT86RF212::BUSY_TX */
@@ -479,11 +486,26 @@ void PhyStateToRxOn(){
 	}
 }
 
+
 static void PhyCalibrateFTN(){
 	/* AT86RF212::[CONFIG] */
 	if(IsStateConfig()){
 		AT86RF212B_BitWrite(SR_FTN_START, 1);
-		AT86RF212B_DelayHAL(AT86RF212B_tTR16, config);
+		AT86RF212B_Delay(AT86RF212B_tTR16);
+	}
+	else{
+		ASSERT(0);
+		if(logging){
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+		}
+	}
+}
+static void PhyCalibratePll(){
+	/* AT86RF212::PLL_ON */
+	if(config.state == PLL_ON){
+		AT86RF212B_BitWrite(SR_PLL_DCU_START, 1);
+		AT86RF212B_BitWrite(SR_PLL_CF_START, 1);
+		AT86RF212B_Delay(AT86RF212B_tTR21);
 	}
 	else{
 		ASSERT(0);
@@ -493,12 +515,14 @@ static void PhyCalibrateFTN(){
 	}
 }
 
-static void PhyCalibratePll(){
-	/* AT86RF212::PLL_ON */
-	if(config.state == PLL_ON){
-		AT86RF212B_BitWrite(SR_PLL_DCU_START, 1);
-		AT86RF212B_BitWrite(SR_PLL_CF_START, 1);;
-		AT86RF212B_DelayHAL(AT86RF212B_tTR21, config);
+static void AT86RF212B_StateMachineReset(){
+	/* AT86RF212::[ACTIVE] */
+	if(IsStateActive()){
+		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
+		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_FORCE_TRX_OFF);
+		AT86RF212B_Delay(AT86RF212B_tTR12);
+		/* AT86RF212::TRX_OFF */
+		StateChangeCheck(TRX_OFF);
 	}
 	else{
 		ASSERT(0);
@@ -507,6 +531,7 @@ static void PhyCalibratePll(){
 		}
 	}
 }
+
 
 static void AT86RF212B_PhySetChannel(){
 	/* AT86RF212::TRX_OFF */
@@ -524,22 +549,6 @@ static void AT86RF212B_PhySetChannel(){
 	}
 }
 
-static void AT86RF212B_StateMachineReset(){
-	/* AT86RF212::[ACTIVE] */
-	if(IsStateActive()){
-		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_FORCE_TRX_OFF);
-		AT86RF212B_DelayHAL(AT86RF212B_tTR12, config);
-		/* AT86RF212::TRX_OFF */
-		StateChangeCheck(TRX_OFF);
-	}
-	else{
-		ASSERT(0);
-		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
-		}
-	}
-}
 
 static void AT86RF212B_SetPhyMode(){
 	/* AT86RF212::TRX_OFF */
@@ -763,4 +772,307 @@ static uint8_t IsStateCmd(){
 //TRX_OFF, RX_ON, PLL_ON, TX_ARET_ON, RX_AACK_ON
 //	(all states which can be entered by writing to the SR_TRX_CMD sub register)
 	return ((config.state == TRX_OFF) || (config.state == PLL_ON) || (config.state == TX_ARET_ON) || (config.state == RX_AACK_ON)) ? 1: 0;
+}
+
+static void AT86RF212B_Delay(uint8_t time){
+	switch(time){
+		case AT86RF212B_t7:
+			//t7 	SLP_TR pulse width
+			//    62.5 ns
+			DelayUs(1);
+			break;
+		case AT86RF212B_t8:
+			//t8 	SPI idle time: SEL rising to falling edge
+			//    250 ns
+			DelayUs(1);
+			break;
+		case AT86RF212B_t8a:
+			//t8a 	SPI idle time: SEL rising to falling edge
+			//    500 ns
+			DelayUs(1);
+			break;
+		case AT86RF212B_t9:
+			//t9 	SCLK rising edge LSB to /SEL rising edge
+			//    250 ns
+			DelayUs(1);
+			break;
+		case AT86RF212B_t10:
+			//t10 	Reset pulse width
+			//    625 ns
+			DelayUs(1);
+			break;
+		case AT86RF212B_t12:
+			//t12 	AES core cycle time
+			//    24 탎
+			DelayUs(24);
+			break;
+		case AT86RF212B_t13:
+			//t13 	Dynamic frame buffer protection: IRQ latency
+			//    750 ns
+			DelayUs(1);
+			break;
+		case AT86RF212B_tTR1:
+			//tTR1 	State transition from P_ON until CLKM is available
+			//    330 탎
+
+			//However the datasheet (7.1.4.1) says 420 탎 typical and 1ms max
+			DelayMs(1);
+			break;
+		case AT86RF212B_tTR2:
+			//tTR2 	State transition from SLEEP to TRX_OFF
+			//    380 탎
+			DelayUs(380);
+			break;
+		case AT86RF212B_tTR3:
+			//tTR3 	State transition from TRX_OFF to SLEEP
+			//    35 CLKM cycles
+
+			//TODO: Implement this better
+			DelayUs(2);
+			break;
+		case AT86RF212B_tTR4:
+			//tTR4 	State transition from TRX_OFF to PLL_ON
+			//    110 탎
+			DelayUs(110);
+			break;
+		case AT86RF212B_tTR5:
+			//tTR5 	State transition from PLL_ON to TRX_OFF
+			//    1 탎
+			DelayUs(1);
+			break;
+		case AT86RF212B_tTR6:
+			//tTR6 	State transition from TRX_OFF to RX_ON
+			//    110 탎
+			DelayUs(110);
+			break;
+		case AT86RF212B_tTR7:
+			//tTR7 	State transition from RX_ON to TRX_OFF
+			//    1 탎
+			DelayUs(1);
+			break;
+		case AT86RF212B_tTR8:
+			//tTR8 	State transition from PLL_ON to RX_ON
+			//    1 탎
+			DelayUs(1);
+			break;
+		case AT86RF212B_tTR9:
+			//tTR9 	State transition from RX_ON to PLL_ON
+			//    1 탎
+			DelayUs(1);
+			break;
+		case AT86RF212B_tTR10:
+			//tTR10 	State transition from PLL_ON to BUSY_TX
+			//    1 symbol
+
+			switch(config.phyMode){
+				case AT86RF212B_BPSK_20:
+					DelayUs(50);
+					break;
+				case AT86RF212B_BPSK_40:
+					DelayUs(25);
+					break;
+				case AT86RF212B_O_QPSK_100:
+				case AT86RF212B_O_QPSK_200:
+				case AT86RF212B_O_QPSK_400:
+					DelayUs(40);
+					break;
+				case AT86RF212B_O_QPSK_250:
+				case AT86RF212B_O_QPSK_500:
+				case AT86RF212B_O_QPSK_1000:
+					DelayUs(16);
+					break;
+				default:
+					ASSERT(0);
+					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					break;
+			}
+
+			break;
+		case AT86RF212B_tTR12:
+			//tTR12 	Transition from all states to TRX_OFF
+			//    1 탎
+			DelayUs(1);
+			break;
+		case AT86RF212B_tTR13:
+			//tTR13 	State transition from RESET to TRX_OFF
+			//    26 탎
+			DelayUs(26);
+			break;
+		case AT86RF212B_tTR14:
+			//tTR14 	Transition from various states to PLL_ON
+			//    1 탎
+			DelayUs(1);
+			break;
+		case AT86RF212B_tTR16:
+			//tTR16 	FTN calibration time
+			//    25 탎
+			DelayUs(25);
+			break;
+		case AT86RF212B_tTR20:
+			//tTR20 	PLL settling time on channel switch
+			//    11 탎
+			DelayUs(11);
+			break;
+		case AT86RF212B_tTR21:
+			//tTR21 	PLL CF calibration time
+			//    8 탎
+			DelayUs(8);
+			break;
+		case AT86RF212B_tTR25:
+			//tTR25 	RSSI update interval
+			//    32 탎 : BPSK20
+			//    24 탎 : BPSK40
+			//    8 탎 : OQPSK
+
+			switch(config.phyMode){
+				case AT86RF212B_BPSK_20:
+					DelayUs(32);
+					break;
+				case AT86RF212B_BPSK_40:
+					DelayUs(24);
+					break;
+				case AT86RF212B_O_QPSK_100:
+				case AT86RF212B_O_QPSK_200:
+				case AT86RF212B_O_QPSK_250:
+				case AT86RF212B_O_QPSK_400:
+				case AT86RF212B_O_QPSK_500:
+				case AT86RF212B_O_QPSK_1000:
+					DelayUs(8);
+					break;
+				default:
+					ASSERT(0);
+					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					break;
+			}
+			break;
+		case AT86RF212B_tTR26:
+			//tTR26 	ED measurement time
+			//    8 symbol : Low Data Rate Mode (LDRM) and manual measurement in High Data Rate Mode (HDRM)
+			//    2 symbol : automatic measurement in High Data Rate Mode (HDRM)
+
+			switch(config.phyMode){
+				case AT86RF212B_BPSK_20:
+					//    8 symbol
+					DelayUs(400);
+					break;
+				case AT86RF212B_BPSK_40:
+					//    8 symbol
+					DelayUs(200);
+					break;
+				case AT86RF212B_O_QPSK_100:
+					//    8 symbol
+					DelayUs(320);
+					break;
+				case AT86RF212B_O_QPSK_200:
+					//    2 symbol
+					DelayUs(80);
+					break;
+				case AT86RF212B_O_QPSK_250:
+					//    8 symbol
+					DelayUs(128);
+					break;
+				case AT86RF212B_O_QPSK_400:
+					//    2 symbol
+					DelayUs(80);
+					break;
+				case AT86RF212B_O_QPSK_500:
+					//    2 symbol
+					DelayUs(32);
+					break;
+				case AT86RF212B_O_QPSK_1000:
+					//    2 symbol
+					DelayUs(32);
+					break;
+				default:
+					ASSERT(0);
+					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					break;
+			}
+			break;
+		case AT86RF212B_tTR28:
+			//tTR28 	CCA measurement time
+			//    8 symbol
+			switch(config.phyMode){
+				case AT86RF212B_BPSK_20:
+					DelayUs(400);
+					break;
+				case AT86RF212B_BPSK_40:
+					DelayUs(200);
+					break;
+				case AT86RF212B_O_QPSK_100:
+				case AT86RF212B_O_QPSK_200:
+				case AT86RF212B_O_QPSK_400:
+					DelayUs(320);
+					break;
+				case AT86RF212B_O_QPSK_250:
+				case AT86RF212B_O_QPSK_500:
+				case AT86RF212B_O_QPSK_1000:
+					DelayUs(128);
+					break;
+				default:
+					ASSERT(0);
+					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					break;
+			}
+			break;
+		case AT86RF212B_tTR29:
+			//tTR29 	SR_RND_VALUE update time
+			//    1 탎
+			DelayUs(1);
+			break;
+		case AT86RF212B_tMSNC:
+			//tMSNC 	Minimum time to synchronize to a preamble and receive an SFD
+			//    2 symbol
+			switch(config.phyMode){
+				case AT86RF212B_BPSK_20:
+					DelayUs(100);
+					break;
+				case AT86RF212B_BPSK_40:
+					DelayUs(400);
+					break;
+				case AT86RF212B_O_QPSK_100:
+				case AT86RF212B_O_QPSK_200:
+				case AT86RF212B_O_QPSK_400:
+					DelayUs(80);
+					break;
+				case AT86RF212B_O_QPSK_250:
+				case AT86RF212B_O_QPSK_500:
+				case AT86RF212B_O_QPSK_1000:
+					DelayUs(32);
+					break;
+			}
+			break;
+		case AT86RF212B_tFrame:
+			//tMSNC 	Minimum time to synchronize to a preamble and receive an SFD
+			//    2 symbol
+			switch(config.phyMode){
+				case AT86RF212B_BPSK_20:
+					DelayMs(52);
+					break;
+				case AT86RF212B_BPSK_40:
+					DelayMs(26);
+					break;
+				case AT86RF212B_O_QPSK_100:
+				case AT86RF212B_O_QPSK_200:
+				case AT86RF212B_O_QPSK_400:
+					DelayMs(11);
+					break;
+				case AT86RF212B_O_QPSK_250:
+				case AT86RF212B_O_QPSK_500:
+				case AT86RF212B_O_QPSK_1000:
+					DelayUs(5);
+					break;
+				default:
+					ASSERT(0);
+					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					break;
+			}
+			break;
+		default:
+			ASSERT(0);
+			LOG(LOG_LVL_ERROR, "Unknown Time Mode");
+			break;
+			return;
+	}
+	return;
 }
