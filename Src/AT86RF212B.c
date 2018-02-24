@@ -33,7 +33,8 @@ static void 	AT86RF212B_PhySetChannel();
 static void 	PhyCalibrateFTN();
 static void 	PhyCalibratePll();
 static void 	AT86RF212B_WaitForIRQ(uint8_t expectedIRQ);
-static void 	StateChangeCheck(uint8_t newState);
+static uint8_t 	StateChangeCheck(uint8_t newState);
+static void 	UpdateState();
 static uint8_t 	IsStateActive();
 static uint8_t 	IsStatePllActive();
 static uint8_t 	IsStateRxBasic();
@@ -117,6 +118,7 @@ void AT86RF212B_Main(){
 			AT86RF212B_CheckForIRQ();
 			break;
 		case PLL_ON:
+			PhyStateToRxOn();
 			break;
 		case BUSY_TX:
 			break;
@@ -175,7 +177,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 		AT86RF212B_DelayHAL(AT86RF212B_t7, config);
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-		StateChangeCheck(PLL_ON);
+		PhyStateToPllOn();
 	}
 	else{
 		ASSERT(0);
@@ -237,6 +239,13 @@ static uint8_t 	AT86RF212B_FrameReadBlm (uint8_t *d){
 
 }
 
+static void 	AT86RF212B_SramRead (uint8_t addr, uint8_t length, uint8_t *data){
+
+}
+static void 	AT86RF212B_Sramrite (uint8_t addr, uint8_t length, uint8_t *data){
+
+}
+
 static uint8_t 	AT86RF212B_FrameLengthRead(){
 	uint8_t pTxData[2] = {0x20, 0};
 	uint8_t pRxData[2] = {0};
@@ -284,12 +293,6 @@ static void 	AT86RF212B_IrqInit (){
 	AT86RF212B_RegWrite(RG_IRQ_MASK, (TRX_IRQ_AWAKE_END | TRX_IRQ_PLL_LOCK | TRX_IRQ_TRX_END));
 	//Only show enabled interrupts in the IRQ register
 	AT86RF212B_BitWrite(SR_IRQ_MASK_MODE, 0);
-
-}
-static void 	AT86RF212B_SramRead (uint8_t addr, uint8_t length, uint8_t *data){
-
-}
-static void 	AT86RF212B_Sramrite (uint8_t addr, uint8_t length, uint8_t *data){
 
 }
 
@@ -388,8 +391,12 @@ void AT86RF212B_TRX_Reset(){
 }
 
 void PhyStateToPllOn(){
-	/* AT86RF212::TRX_OFF */
+	UpdateState();
+	if(config.state == PLL_ON){
+		return;
+	}
 	if(config.state == TRX_OFF){
+		/* AT86RF212::TRX_OFF */
 		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
 		AT86RF212B_WaitForIRQ(TRX_IRQ_PLL_LOCK);
 		StateChangeCheck(PLL_ON);
@@ -422,6 +429,7 @@ void PhyStateToPllOn(){
 }
 
 void PhyStateToRxOn(){
+	UpdateState();
 	//TODO:Remove this condition, was used for a terminal test
 	if(config.state == RX_ON){
 		return;
@@ -667,23 +675,24 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 	}
 }
 
-static void StateChangeCheck(uint8_t newState){
-	uint8_t currentState = AT86RF212B_RegRead(RG_TRX_STATUS);
-	ASSERT(currentState & newState);
+static uint8_t StateChangeCheck(uint8_t newState){
+	UpdateState();
 
-	//For testing to slow down the process to make sure all of the state changes logged to the USB connected terminal
-	//DelayMs(1000);
-
-	if(!(AT86RF212B_RegRead(RG_TRX_STATUS) & newState)){
+	if(config.state != newState){
 		ASSERT(0);
 		if(logging){
 			LOG(LOG_LVL_ERROR, "State Change Failed\r\n");
 		}
+		return 0;
 	}
 	else if(logging){
 		LOG(LOG_LVL_DEBUG, "State Change Success!\r\n");
+		return 1;
 	}
-	config.state = newState;
+}
+
+static void UpdateState(){
+	config.state = AT86RF212B_RegRead(RG_TRX_STATUS);
 }
 
 static uint8_t IsStateActive(){

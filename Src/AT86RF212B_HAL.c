@@ -180,7 +180,6 @@ uint8_t AT86RF212B_ReadPinHAL(uint8_t pin){
 
 //TODO: Change the returns from void to an indicator, that means the functions need to validate a successful operation or not
 void AT86RF212B_OpenHAL(uint32_t time_out){
-	timeout = time_out;
 
 #if RASPBERRY_PI
 	wiringPiSetup ();
