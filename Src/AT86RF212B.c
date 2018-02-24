@@ -43,7 +43,7 @@ static uint8_t 	IsStateTxBusy();
 static uint8_t 	IsStateRxBusy();
 static uint8_t 	IsStateBusy();
 static uint8_t 	IsStateCmd();
-static uint8_t 	AT86RF212B_CheckForIRQ(uint8_t expectedIRQ);
+static void 	AT86RF212B_CheckForIRQ();
 static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length);
 //-----------External Variables--------------------//
 extern uint8_t logging;
@@ -114,6 +114,7 @@ void AT86RF212B_Main(){
 		case SLEEP:
 			break;
 		case RX_ON:
+			AT86RF212B_CheckForIRQ();
 			break;
 		case PLL_ON:
 			break;
@@ -617,28 +618,20 @@ void AT86RF212B_TestSleep(){
 	AT86RF212B_WaitForIRQ(TRX_IRQ_AWAKE_END);
 }
 
-static uint8_t AT86RF212B_CheckForIRQ(uint8_t expectedIRQ){
+static void AT86RF212B_CheckForIRQ(){
 	if(interupt){
 		//Clear the interrupt flag
 		interupt = 0;
 
 		uint8_t irqState = AT86RF212B_RegRead(RG_IRQ_STATUS);
 
-		if(!(irqState & expectedIRQ)){
-			ASSERT(0);
-			if(logging){
-				LOG(LOG_LVL_ERROR, "Something very strange happened\r\n");
-			}
-			return 0;
-		}
-		else{
-			if(logging){
-				LOG(LOG_LVL_DEBUG, "Expected IRQ Received!\r\n");
-			}
-			return 1;
+		if(logging){
+			char tmpStr[20];
+			sprintf(tmpStr, "IRQ Recieved: %d\r\n", irqState);
+			LOG(LOG_LVL_ERROR, tmpStr);
 		}
 	}
-	return 0;
+	return;
 }
 
 static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
