@@ -254,22 +254,24 @@ static uint8_t 	AT86RF212B_FrameLengthRead(){
 }
 
 uint8_t	AT86RF212B_FrameRead(){
-	if(AT86RF212B_BitRead(SR_RX_CRC_VALID)){
-		uint8_t length = AT86RF212B_FrameLengthRead();
-		if(length <= 128){
-			uint8_t pTxData[length];
-			uint8_t pRxData[length];
+	//TODO: Add CRC code
+	//if(AT86RF212B_BitRead(SR_RX_CRC_VALID)){
+	uint8_t length = AT86RF212B_FrameLengthRead();
+	if(length <= 128){
+		uint8_t pTxData[length+5];
+		uint8_t pRxData[length+5];
 
-			AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, length);
-			if(logging){
-				LOG(LOG_LVL_DEBUG, (char *)pRxData);
-			}
+		pTxData[0] = 0x20;
+
+		AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, length);
+		if(logging){
+			LOG(LOG_LVL_DEBUG, (char *)pRxData);
 		}
 	}
 	else{
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "CRC Failed\r\n");
+			LOG(LOG_LVL_ERROR, "Frame too large\r\n");
 		}
 	}
 	return AT86RF212B_FrameLengthRead();
