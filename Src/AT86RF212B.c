@@ -267,10 +267,10 @@ uint8_t	AT86RF212B_FrameRead(){
 
 		pTxData[0] = 0x20;
 
-		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length);
+		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+5);
 		if(logging){
 			//First char is the PHY_STATUS bit
-			LOG(LOG_LVL_DEBUG, (char *)&pRxData[1]);
+			LOG(LOG_LVL_DEBUG, (char *)&pRxData[2]);
 		}
 	}
 	else{
