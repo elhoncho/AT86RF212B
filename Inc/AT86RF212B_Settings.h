@@ -28,7 +28,7 @@
 //rxSensLvl = 0 - 15, 0 = max sensitivity
 #define AT86RF212B_RX_SENSE_LVL		0
 //Enable TX CRC generation 1 = on 0 = off
-#define AT86RF212B_TX_CRC 			0
+#define AT86RF212B_TX_CRC 			1
 //Address Filtering
 #define AT86RF212B_PAN_ID_7_0 		1
 #define AT86RF212B_PAN_ID_15_8 		0x01
