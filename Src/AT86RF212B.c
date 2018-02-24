@@ -7,6 +7,7 @@
 #include "generalHAL.h"
 #include "errors_and_logging.h"
 #include "AT86RF212B_Settings.h"
+#include <string.h>
 
 #define MSKMODE_SHOW_INT
 #define MSKMODE_DONT_SHOW_INT
@@ -22,8 +23,7 @@ static void 	AT86RF212B_AES_Io (uint8_t mode, uint8_t cmd, uint8_t start, uint8_
 static void 	AT86RF212B_AES_Read (uint8_t cmd, uint8_t *odata);
 static void 	AT86RF212B_AES_Write (uint8_t cmd, uint8_t start, uint8_t *idata);
 static void 	AT86RF212B_AES_Wrrd (uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata);
-static uint8_t 	AT86RF212B_FrameLengthRead ();
-static uint8_t 	AT86RF212B_FrameRead (uint8_t *frame);
+static uint8_t 	AT86RF212B_FrameLengthRead();
 static uint8_t 	AT86RF212B_FrameReadBlm (uint8_t *d);
 static void 	AT86RF212B_IrqInit ();
 static void 	AT86RF212B_SramRead (uint8_t addr, uint8_t length, uint8_t *data);
@@ -43,11 +43,8 @@ static uint8_t 	IsStateTxBusy();
 static uint8_t 	IsStateRxBusy();
 static uint8_t 	IsStateBusy();
 static uint8_t 	IsStateCmd();
-static void PhyStateTrxOffToPllOn();
-static void PhyStateTrxOffToRxOn();
-static void PhyStatePllOnToRxOn();
-static void PhyStateBusyTxToRxOn();
-static uint8_t AT86RF212B_CheckForIRQ(uint8_t expectedIRQ);
+static uint8_t 	AT86RF212B_CheckForIRQ(uint8_t expectedIRQ);
+static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length);
 //-----------External Variables--------------------//
 extern uint8_t logging;
 
@@ -107,22 +104,16 @@ void AT86RF212B_ISR_Callback(){
 	interupt = 1;
 }
 
-static void AT86RF212B_Main(){
+void AT86RF212B_Main(){
 	//Main State Machine
 	switch(config.state){
 		case P_ON:
 			break;
 		case TRX_OFF:
-			//PhyStateTrxOffToRxOn();
 			break;
 		case SLEEP:
 			break;
 		case RX_ON:
-			if(AT86RF212B_CheckForIRQ(TRX_IRQ_TRX_END)){
-				if(AT86RF212B_BitRead(SR_RX_CRC_VALID)){
-					//AT86RF212B_FrameRead();
-				}
-			}
 			break;
 		case PLL_ON:
 			break;
@@ -164,6 +155,10 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 }
 
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
+	if(config.state != PLL_ON){
+		PhyStateToPllOn();
+	}
+
 	if(config.state == PLL_ON){
 		if(length > 128){
 			ASSERT(0);
@@ -173,7 +168,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 			return;
 		}
 		//TODO: The speed of transmission can be improved by not waiting for all the data to be written before starting the TX phase
-		AT86RF212B_FrameWriteHAL(frame, length);
+		AT86RF212B_FrameWrite(frame, length);
 
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
 		AT86RF212B_DelayHAL(AT86RF212B_t7, config);
@@ -237,14 +232,47 @@ static void 	AT86RF212B_AES_Write (uint8_t cmd, uint8_t start, uint8_t *idata){
 static void 	AT86RF212B_AES_Wrrd (uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata){
 
 }
-static uint8_t 	AT86RF212B_FrameLengthRead (){
-
-}
-static uint8_t 	AT86RF212B_FrameRead (uint8_t *frame){
-
-}
 static uint8_t 	AT86RF212B_FrameReadBlm (uint8_t *d){
 
+}
+
+static uint8_t 	AT86RF212B_FrameLengthRead(){
+	uint8_t pTxData[2] = {0x20, 0};
+	uint8_t pRxData[2] = {0};
+	AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, 2);
+	return pRxData[1];
+}
+
+uint8_t	AT86RF212B_FrameRead(){
+	if(AT86RF212B_BitRead(SR_RX_CRC_VALID)){
+		uint8_t length = AT86RF212B_FrameLengthRead();
+		if(length <= 128){
+			uint8_t pTxData[length];
+			uint8_t pRxData[length];
+
+			AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, length);
+			if(logging){
+				LOG(LOG_LVL_DEBUG, (char *)pRxData);
+			}
+		}
+	}
+	else{
+		ASSERT(0);
+		if(logging){
+			LOG(LOG_LVL_ERROR, "CRC Failed\r\n");
+		}
+	}
+	return AT86RF212B_FrameLengthRead();
+}
+
+static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
+	uint8_t pTxData[length+1];
+	uint8_t pRxData[7] = {0};
+
+	pTxData[0] = 0x60;
+	memcpy(&pTxData[1], frame, length);
+
+	AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, length);
 }
 
 static void 	AT86RF212B_IrqInit (){
@@ -358,13 +386,32 @@ void AT86RF212B_TRX_Reset(){
 	}
 }
 
-static void PhyStateTrxOffToPllOn(){
+void PhyStateToPllOn(){
 	/* AT86RF212::TRX_OFF */
 	if(config.state == TRX_OFF){
 		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
 		AT86RF212B_WaitForIRQ(TRX_IRQ_PLL_LOCK);
 		StateChangeCheck(PLL_ON);
 	}
+	else if(IsStatePllActive()){
+		/* AT86RF212::[PLL_ACTIVE] */
+		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
+		AT86RF212B_DelayHAL(AT86RF212B_tTR9, config);
+		StateChangeCheck(PLL_ON);
+	}
+	else if(IsStateBusy()){
+		/* AT86RF212::[BUSY] */
+		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
+		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+		StateChangeCheck(PLL_ON);
+	}
+	else if(config.state == BUSY_RX_AACK){
+		/* AT86RF212::BUSY_RX_AACK */
+		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
+		AT86RF212B_DelayHAL(AT86RF212B_tFrame, config);
+		StateChangeCheck(PLL_ON);
+	}
+	//TODO: May need to add a state to force to pll on, force to pll on is an unimplemented transition in the programmers guide
 	else{
 		ASSERT(0);
 		if(logging){
@@ -373,37 +420,25 @@ static void PhyStateTrxOffToPllOn(){
 	}
 }
 
-static void PhyStateTrxOffToRxOn(){
+void PhyStateToRxOn(){
+	//TODO:Remove this condition, was used for a terminal test
+	if(config.state == RX_ON){
+		return;
+	}
 	/* AT86RF212::TRX_OFF */
 	if(config.state == TRX_OFF){
 		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_ON);
 		AT86RF212B_DelayHAL(AT86RF212B_tTR6, config);
 		StateChangeCheck(RX_ON);
 	}
-	else{
-		ASSERT(0);
-		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
-		}
-	}
-}
-static void PhyStatePllOnToRxOn(){
 	 /* AT86RF212::PLL_ON */
-	if(config.state ==  PLL_ON){
+	else if(config.state ==  PLL_ON){
 		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_ON);
 		AT86RF212B_DelayHAL(AT86RF212B_tTR8, config);
 		StateChangeCheck(RX_ON);
 	}
-	else{
-		ASSERT(0);
-		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
-		}
-	}
-}
-static void PhyStateBusyTxToRxOn(){
 	/* AT86RF212::BUSY_TX */
-	if(IsStateTxBusy()){
+	else if(IsStateTxBusy()){
 		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_ON);
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
 		StateChangeCheck(RX_ON);
@@ -632,6 +667,7 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 		if(logging){
 			LOG(LOG_LVL_ERROR, "Something very strange happened\r\n");
 		}
+		AT86RF212B_WaitForIRQ(expectedIRQ);
 	}
 	else if(logging){
 		LOG(LOG_LVL_DEBUG, "Expected IRQ Received!\r\n");

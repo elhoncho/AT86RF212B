@@ -96,7 +96,8 @@ enum delayTimes{
   AT86RF212B_tTR26,
   AT86RF212B_tTR28,
   AT86RF212B_tTR29,
-  AT86RF212B_tMSNC
+  AT86RF212B_tMSNC,
+  AT86RF212B_tFrame
 };
 
 enum PhyMode{
@@ -112,6 +113,7 @@ enum PhyMode{
 
 //------------Public Function Prototypes----------------//
 void AT86RF212B_Open();
+void AT86RF212B_Main();
 uint8_t AT86RF212B_RegRead(uint8_t reg);
 uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value);
 void AT86RF212B_ISR_Callback();
@@ -126,5 +128,10 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length);
 void AT86RF212B_TestSleep();
 //TODO: Remove this it should be static
 uint8_t AT86RF212B_BitRead (uint8_t addr, uint8_t mask, uint8_t pos);
-
+//TODO: Remove this it should be static
+void PhyStateToRxOn();
+//TODO: Remove this it should be static
+void PhyStateToPllOn();
+//TODO: Remove this it should be static
+uint8_t	AT86RF212B_FrameRead();
 #endif /* MYINC_AT86RF212B_H_ */

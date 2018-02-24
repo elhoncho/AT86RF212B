@@ -44,6 +44,8 @@ static void GetIDs(char *arg1, char *arg2);
 static void Reset(char *arg1, char *arg2);
 static void TestSleep(char *arg1, char *arg2);
 static void TestBit(char *arg1, char *arg2);
+static void ReadFrame(char *arg1, char *arg2);
+static void WriteFrame(char *arg1, char *arg2);
 
 static const struct commandStruct commands[] ={
     {"clear", &CmdClear, "Clears the screen"},
@@ -56,13 +58,32 @@ static const struct commandStruct commands[] ={
 	{"reset", &Reset, "reset from active state"},
 	{"sleep", &TestSleep, "Test sleep state"},
 	{"bt", &TestBit, "Test a bit of a reg"},
+	{"rf", &ReadFrame, "Reads the frame buffer"},
+	{"tx", &WriteFrame, "Writes to the frame buffer"},
     {"",0,""} //End of commands indicator. Must be last.
 };
 
+static void ReadFrame(char *arg1, char *arg2){
+	//Max frame size 132 bytes (6.3.2)
+	PhyStateToRxOn();
+
+	if(logging){
+		char tmpStr[MAX_STR_LEN];
+		TerminalWrite("Frame Data:\r\n");
+		sprintf(tmpStr, "%i \r\n", AT86RF212B_FrameRead());
+		TerminalWrite(tmpStr);
+	}
+}
+
+static void WriteFrame(char *arg1, char *arg2){
+	uint8_t tmpStr[] = "Hello";
+	AT86RF212B_TxData(tmpStr, strlen((char*)tmpStr));
+}
+
 static void TestBit(char *arg1, char *arg2){
 	uint8_t tmpStr[MAX_STR_LEN];
-	sprintf(tmpStr, "%i\r\n", AT86RF212B_BitRead(arg1, 0, arg2));
-	TerminalWrite(tmpStr);
+	sprintf((char *)tmpStr, "%i\r\n", AT86RF212B_BitRead(strtol(arg1, NULL, 16), 0, strtol(arg2, NULL, 10)));
+	TerminalWrite((char *)tmpStr);
 }
 
 static void TestSleep(char *arg1, char *arg2){

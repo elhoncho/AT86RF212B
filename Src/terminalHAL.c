@@ -48,6 +48,9 @@ void terminalWriteHAL(char *txStr){
 #if STM32
 	if(hUsbDeviceHS.dev_state == USBD_STATE_CONFIGURED){
 		//TODO: Fix this, can lock up here
+		if((strcmp(txStr, "\r") == 0) || (strcmp(txStr, "\n") == 0)){
+			sprintf(txStr, "\r\n");
+		}
 		while(CDC_Transmit_HS((uint8_t*)txStr, strlen(txStr)) == USBD_BUSY);
 	}
 #endif
@@ -67,9 +70,11 @@ void terminalWriteRXCharHAL(char rxChar){
 	pushToBuffer(&rxBuffer, rxChar);
 
 	char tmpStr[2] = {rxChar, '\0'};
+
 	if(ECHO_INPUT){
 		terminalWriteHAL(tmpStr);
 	}
+
 	if(rxChar == '\r' || rxChar == '\n'){
 		newCmd = 1;
 	}
