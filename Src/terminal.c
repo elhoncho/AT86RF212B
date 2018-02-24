@@ -76,8 +76,7 @@ static void ReadFrame(char *arg1, char *arg2){
 }
 
 static void WriteFrame(char *arg1, char *arg2){
-	uint8_t tmpStr[] = "Hello World!\r\n";
-	AT86RF212B_TxData(tmpStr, strlen((char*)tmpStr));
+	AT86RF212B_TxData(arg1, strlen(arg1));
 }
 
 static void TestBit(char *arg1, char *arg2){

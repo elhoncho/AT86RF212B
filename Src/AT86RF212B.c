@@ -258,16 +258,24 @@ static uint8_t 	AT86RF212B_FrameLengthRead(){
 }
 
 uint8_t	AT86RF212B_FrameRead(){
-	//TODO: Add CRC code
-	//if(AT86RF212B_BitRead(SR_RX_CRC_VALID)){
+	if(config.txCrc){
+		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
+			//If CRC enabled and CRC is not valid
+			return 0;
+		}
+	}
+
 	uint8_t length = AT86RF212B_FrameLengthRead();
 	if(length <= 128){
-		uint8_t pTxData[132] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-		uint8_t pRxData[132] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+		uint8_t pTxData[length+3];
+		uint8_t pRxData[length+3];
 
 		pTxData[0] = 0x20;
 
-		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+5);
+		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+3);
+		//Energy Detection (ED) pRxData[length]
+		//Link Quality Indication (LQI) pRxData[length+1]
+		//RX_STATUS pRxData[length+2]
 		if(logging){
 			//First char is the PHY_STATUS bit
 			LOG(LOG_LVL_DEBUG, (char *)&pRxData[2]);
@@ -284,7 +292,7 @@ uint8_t	AT86RF212B_FrameRead(){
 
 static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
 	uint8_t pTxData[length+2];
-	uint8_t pRxData[7] = {0};
+	uint8_t pRxData[length+2];
 
 	pTxData[0] = 0x60;
 	pTxData[1] = length;
