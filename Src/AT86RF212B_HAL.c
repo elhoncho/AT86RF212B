@@ -216,7 +216,7 @@ void AT86RF212B_CloseHAL(){
 //pTxData = pointer to the data to send
 //pRxValue = pointer to rx data array
 //size = amount of data to be sent and received
-void AT86RF212B_RegReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t size){
+void AT86RF212B_ReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t size){
 #if RASPBERRY_PI
 	digitalWrite(SPI_NSS_PIN, LOW);
 	wiringPiSPIDataRW(SPI_CHANNEL, pTxData, size);

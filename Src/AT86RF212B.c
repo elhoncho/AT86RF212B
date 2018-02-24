@@ -139,7 +139,7 @@ uint8_t AT86RF212B_RegRead(uint8_t reg){
 	reg |= 1 << 7;
 	reg &= ~(1 << 6);
 	pTxData[0] = reg;
-	AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, 2);
+	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, 2);
 	//First byte is a configurable status and the 2nd byte is the register value
 	return pRxData[1];
 }
@@ -153,7 +153,7 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 	reg |= 1 << 6;
 	pTxData[0] = reg;
 	pTxData[1] = value;
-	AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, 2);
+	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, 2);
 
 	return pRxData[1];
 }
@@ -206,7 +206,7 @@ static void AT86RF212B_BitWrite(uint8_t reg, uint8_t mask, uint8_t pos, uint8_t 
 	pTxData[0] = reg;
 
 	pTxData[1] = (currentValue & (~mask)) | (value << pos);
-	AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, 2);
+	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, 2);
 
 	return;
 }
@@ -250,7 +250,7 @@ static void 	AT86RF212B_Sramrite (uint8_t addr, uint8_t length, uint8_t *data){
 static uint8_t 	AT86RF212B_FrameLengthRead(){
 	uint8_t pTxData[2] = {0x20, 0};
 	uint8_t pRxData[2] = {0};
-	AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, 2);
+	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, 2);
 	return pRxData[1];
 }
 
@@ -264,7 +264,7 @@ uint8_t	AT86RF212B_FrameRead(){
 
 		pTxData[0] = 0x20;
 
-		AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, length);
+		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length);
 		if(logging){
 			LOG(LOG_LVL_DEBUG, (char *)pRxData);
 		}
@@ -285,7 +285,7 @@ static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
 	pTxData[0] = 0x60;
 	memcpy(&pTxData[1], frame, length);
 
-	AT86RF212B_RegReadAndWriteHAL(pTxData, pRxData, length+1);
+	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+1);
 }
 
 static void 	AT86RF212B_IrqInit (){
