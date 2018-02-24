@@ -111,6 +111,7 @@ void AT86RF212B_Main(){
 		case P_ON:
 			break;
 		case TRX_OFF:
+			PhyStateToRxOn();
 			break;
 		case SLEEP:
 			break;
