@@ -65,6 +65,7 @@ void HAL_Callback();
 void AT86RF212B_DataOutputHAL(uint8_t * pTxData, uint32_t length){
 	#if RASPBERRY_PI
 	fwrite(pTxData, sizeof(uint8_t), length, stdout);
+	fflush(stdout);
 	#endif
 
 	#if STM32
