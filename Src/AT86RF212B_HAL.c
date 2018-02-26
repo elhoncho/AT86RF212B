@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 #include "AT86RF212B.h"
 #include "generalHAL.h"
 #include "errors_and_logging.h"
@@ -63,7 +64,7 @@ void HAL_Callback();
 
 void AT86RF212B_DataOutputHAL(uint8_t * pTxData, uint32_t length){
 	#if RASPBERRY_PI
-	fwrite(pTxData, length, stdout);
+	fwrite(pTxData, sizeof(uint8_t), length, stdout);
 	#endif
 
 	#if STM32
