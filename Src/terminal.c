@@ -9,16 +9,15 @@
  *           -make newCmd true when a command has been entered (usually when recieved a cr and or nl)
  */
 
-#include<stdint.h>
-#include<string.h>
-#include<stdlib.h>
-#include<stdio.h>
+#include <interfaceHAL.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "terminal.h"
-#include "terminalHAL.h"
 #include "AT86RF212B.h"
 #include "generalHAL.h"
 #include "errors_and_logging.h"
-
 #include "AT86RF212B_Regesters.h"
 #include "AT86RF212B_Constants.h"
 
@@ -46,6 +45,7 @@ static void TestSleep(char *arg1, char *arg2);
 static void TestBit(char *arg1, char *arg2);
 static void ReadFrame(char *arg1, char *arg2);
 static void WriteFrame(char *arg1, char *arg2);
+static void RawMode(char *arg1, char *arg2);
 
 static const struct commandStruct commands[] ={
     {"clear", &CmdClear, "Clears the screen"},
@@ -60,8 +60,13 @@ static const struct commandStruct commands[] ={
 	{"bt", &TestBit, "Test a bit of a reg"},
 	{"rf", &ReadFrame, "Reads the frame buffer"},
 	{"tx", &WriteFrame, "Writes to the frame buffer"},
+	{"rm", &RawMode, "Run in raw mode."},
     {"",0,""} //End of commands indicator. Must be last.
 };
+
+static void RawMode(char *arg1, char *arg2){
+	logging = 0;
+}
 
 static void ReadFrame(char *arg1, char *arg2){
 	//Max frame size 132 bytes (6.3.2)
@@ -163,7 +168,7 @@ void TerminalRead(){
 
         char arg[3][22];
 
-        tmpChar = terminalReadRXCharHAL();
+        tmpChar = InterfacePopFromInputBufferHAL();
 
         arg[0][0] = '\0';
         arg[1][0] = '\0';
@@ -183,7 +188,7 @@ void TerminalRead(){
                 i++;
             }
 
-            tmpChar = terminalReadRXCharHAL();
+            tmpChar = InterfacePopFromInputBufferHAL();
         }
 
         if(logging){
@@ -235,7 +240,7 @@ void TerminalRead(){
 }
 
 void TerminalWrite(char *txStr){
-	terminalWriteHAL(txStr);
+	InterfaceWriteHAL(txStr);
 }
 
 void TerminalMain(){

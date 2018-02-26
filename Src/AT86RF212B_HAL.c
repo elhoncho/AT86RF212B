@@ -11,9 +11,12 @@
 #include "generalHAL.h"
 #include "errors_and_logging.h"
 #include "AT86RF212B_Settings.h"
+#include "terminal.h"
+#include "AT86RF212B_HAL.h"
 
 #if STM32
-
+#include "usb_device.h"
+#include "usbd_cdc_if.h"
 #include "stm32f4xx_hal.h"
 
 #define SPI_NSS_PORT GPIOG
@@ -36,6 +39,7 @@
 
 uint32_t timeout = 1000;
 extern SPI_HandleTypeDef hspi3;
+
 SPI_HandleTypeDef hspi;
 #endif
 
@@ -56,6 +60,20 @@ SPI_HandleTypeDef hspi;
 void HAL_Callback();
 
 #endif
+
+void AT86RF212B_DataOutputHAL(uint8_t * pTxData, uint32_t length){
+	#if RASPBERRY_PI
+	fwrite(pTxData, length, stdout);
+	#endif
+
+	#if STM32
+	if(hUsbDeviceHS.dev_state == USBD_STATE_CONFIGURED){
+		//TODO: Fix this, can lock up here
+		while(CDC_Transmit_HS(pTxData, length) == USBD_BUSY);
+	}
+	#endif
+}
+
 
 void AT86RF212B_WritePinHAL(uint8_t pin, uint8_t state){
 	uint16_t GPIO_PIN;

@@ -14,12 +14,11 @@
 #if STM32
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
-
-#define ECHO_INPUT 1
+static uint8_t echoInput = 1;
 #endif
 
 #if RASPBERRY_PI
-#define ECHO_INPUT 0
+static uint8_t echoInput = 0;
 #endif
 
 //Max amount of characters to buffer on the rx
@@ -39,7 +38,11 @@ static struct circleBuffer rxBuffer;
 static int8_t pushToBuffer(struct circleBuffer *b, const char inChar);
 static int8_t popFromBuffer(struct circleBuffer *b, char *outChar);
 
-void terminalWriteHAL(char *txStr){
+void SetEchoInput(uint8_t condition){
+	echoInput = condition;
+}
+
+void InterfaceWriteHAL(char *txStr){
 #if RASPBERRY_PI
 	printf("%s", txStr);
 	fflush(stdout);
@@ -47,16 +50,16 @@ void terminalWriteHAL(char *txStr){
 
 #if STM32
 	if(hUsbDeviceHS.dev_state == USBD_STATE_CONFIGURED){
-		//TODO: Fix this, can lock up here
 		if((strcmp(txStr, "\r") == 0) || (strcmp(txStr, "\n") == 0)){
 			sprintf(txStr, "\r\n");
 		}
+		//TODO: Fix this, if too much data too fast can lock up here
 		while(CDC_Transmit_HS((uint8_t*)txStr, strlen(txStr)) == USBD_BUSY);
 	}
 #endif
 }
 
-int8_t terminalReadRXCharHAL(){
+int8_t InterfacePopFromInputBufferHAL(){
 	char rxChar;
 	if(popFromBuffer(&rxBuffer, &rxChar) == 0){
 		return rxChar;
@@ -66,13 +69,13 @@ int8_t terminalReadRXCharHAL(){
 	}
 }
 
-void terminalWriteRXCharHAL(char rxChar){
+void InterfacePushToInputBufferHAL(char rxChar){
 	pushToBuffer(&rxBuffer, rxChar);
 
 	char tmpStr[2] = {rxChar, '\0'};
 
-	if(ECHO_INPUT){
-		terminalWriteHAL(tmpStr);
+	if(echoInput){
+		InterfaceWriteHAL(tmpStr);
 	}
 
 	if(rxChar == '\r' || rxChar == '\n'){

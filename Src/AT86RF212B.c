@@ -295,6 +295,10 @@ uint8_t	AT86RF212B_FrameRead(){
 			LOG(LOG_LVL_DEBUG, (char *)&pRxData[2]);
 			LOG(LOG_LVL_DEBUG, "\r\n>");
 		}
+		//nLength-5 because data + 2 bytes from command and PHR + 3 bytes ED LQI and RX_STATUS
+		uint8_t data[nLength-5];
+		memcpy(data, &pRxData[2], nLength-5);
+		AT86RF212B_DataOutputHAL(data, nLength-5);
 	}
 	else{
 		ASSERT(0);

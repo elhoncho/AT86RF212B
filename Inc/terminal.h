@@ -14,6 +14,7 @@ void TerminalOpen();
 void TermianlClose();
 void TerminalRead();
 void TerminalWrite(char *txStr);
+void TerminalWriteLength(char *txStr, uint32_t length);
 void TerminalMain();
 
 #endif /* TERMINAL_H_ */
