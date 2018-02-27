@@ -22,7 +22,7 @@ static uint8_t echoInput = 0;
 #endif
 
 //Max amount of characters to buffer on the rx
-#define BUFFER_LENGTH 25
+#define BUFFER_LENGTH 512
 
 
 struct circleBuffer{
@@ -35,8 +35,8 @@ extern uint8_t newCmd;
 
 static struct circleBuffer rxBuffer;
 
-static int8_t pushToBuffer(struct circleBuffer *b, const char inChar);
-static int8_t popFromBuffer(struct circleBuffer *b, char *outChar);
+static uint8_t pushToBuffer(struct circleBuffer *b, const char inChar);
+static uint8_t popFromBuffer(struct circleBuffer *b, char *outChar);
 
 void SetEchoInput(uint8_t condition){
 	echoInput = condition;
@@ -59,31 +59,36 @@ void InterfaceWriteHAL(char *txStr){
 #endif
 }
 
-int8_t InterfacePopFromInputBufferHAL(){
+uint16_t InterfacePopFromInputBufferHAL(){
 	char rxChar;
-	if(popFromBuffer(&rxBuffer, &rxChar) == 0){
+	if(popFromBuffer(&rxBuffer, &rxChar)){
 		return rxChar;
 	}
 	else{
-		return -1;
+		//return a number beyond one byte range to indicate a failure
+		return 256;
 	}
 }
 
-void InterfacePushToInputBufferHAL(char rxChar){
-	pushToBuffer(&rxBuffer, rxChar);
+uint8_t InterfacePushToInputBufferHAL(char rxChar){
+	if(pushToBuffer(&rxBuffer, rxChar)){
+		char tmpStr[2] = {rxChar, '\0'};
 
-	char tmpStr[2] = {rxChar, '\0'};
+		if(echoInput){
+			InterfaceWriteHAL(tmpStr);
+		}
 
-	if(echoInput){
-		InterfaceWriteHAL(tmpStr);
+		if(rxChar == '\r' || rxChar == '\n'){
+			newCmd = 1;
+		}
+		return 1;
 	}
-
-	if(rxChar == '\r' || rxChar == '\n'){
-		newCmd = 1;
+	else{
+		return 0;
 	}
 }
 
-static int8_t pushToBuffer(struct circleBuffer *b, const char inChar){
+static uint8_t pushToBuffer(struct circleBuffer *b, const char inChar){
     if(b->head == BUFFER_LENGTH-1){
         b->head = 0;
     }
@@ -93,7 +98,7 @@ static int8_t pushToBuffer(struct circleBuffer *b, const char inChar){
 
     if(b->head != b->tail){
         b->buffer[b->head] = inChar;
-        return 0;
+        return 1;
     }
     else{
         //Make sure head and tail are not both 0
@@ -103,11 +108,11 @@ static int8_t pushToBuffer(struct circleBuffer *b, const char inChar){
         else{
             b->head--;
         }
-        return -1;
+        return 0;
     }
 }
 
-static int8_t popFromBuffer(struct circleBuffer *b, char *outChar){
+static uint8_t popFromBuffer(struct circleBuffer *b, char *outChar){
     if(b->tail != b->head){
         if(b->tail == BUFFER_LENGTH-1){
             b->tail = 0;
@@ -117,10 +122,10 @@ static int8_t popFromBuffer(struct circleBuffer *b, char *outChar){
         }
 
         *outChar = b->buffer[b->tail];
-        return 0;
+        return 1;
     }
     else{
         //Head equals tail, therefore nothing on the buffer
-        return -1;
+        return 0;
     }
 }

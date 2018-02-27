@@ -15,10 +15,11 @@ void RawModeOpen(){
 void RawModeMain(){
 	static uint8_t txData[128];
 	uint8_t i;
-	uint8_t tmpChar;
+	//Must be uint16_t so tath 256 is a valid value to return signifying InterfacePopFromInputBufferHAL had no results
+	uint16_t tmpChar;
 	for(i = 0; i < 128; i++){
 		tmpChar = InterfacePopFromInputBufferHAL();
-		if(tmpChar == 255){
+		if(tmpChar == 256){
 			if(i){
 				break;
 			}

@@ -11,8 +11,8 @@
 #include <stdint.h>
 
 void InterfaceWriteHAL(char *txStr);
-int8_t InterfacePopFromInputBufferHAL();
-void InterfacePushToInputBufferHAL(char rxChar);
+uint16_t InterfacePopFromInputBufferHAL();
+uint8_t InterfacePushToInputBufferHAL(char rxChar);
 void SetEchoInput(uint8_t condition);
 
 #endif /* MYINC_TERMINALHAL_H_ */

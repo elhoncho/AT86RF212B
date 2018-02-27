@@ -175,7 +175,7 @@ void TerminalRead(){
         arg[2][0] = '\0';
 
         i = 0;
-        while(tmpChar != 255){
+        while(tmpChar != 256){
             uint8_t len = strlen(arg[i]);
 
             //Dont store \r or \n or space or .

@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include "errors_and_logging.h"
 #include "terminal.h"
+#include "interfaceHAL.h"
 
 #define MIN_LOG_LVL 5
 
@@ -17,7 +18,7 @@ uint8_t logging = 1;
 
 void LOG(LOG_LVL lvl, char * message){
 	if(lvl >= MIN_LOG_LVL){
-		TerminalWrite(message);
+		InterfaceWriteHAL(message);
 	}
 }
 
