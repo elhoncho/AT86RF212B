@@ -42,9 +42,9 @@ void SetEchoInput(uint8_t condition){
 	echoInput = condition;
 }
 
-void InterfaceWriteHAL(char *txStr){
+void InterfaceWriteHAL(uint8_t *txStr, uint16_t length){
 #if RASPBERRY_PI
-	printf("%s", txStr);
+	fwrite(txStr, sizeof(uint8_t), length, stdio);
 	fflush(stdout);
 #endif
 
@@ -74,7 +74,7 @@ uint8_t InterfacePushToInputBufferHAL(char rxChar){
 		char tmpStr[2] = {rxChar, '\0'};
 
 		if(echoInput){
-			InterfaceWriteHAL(tmpStr);
+			InterfaceWriteHAL(tmpStr, 2);
 		}
 
 		if(rxChar == '\r' || rxChar == '\n'){

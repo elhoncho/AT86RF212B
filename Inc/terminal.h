@@ -13,7 +13,7 @@ typedef void(*functionPointerType)(char *arg1, char *arg2);
 void TerminalOpen();
 void TermianlClose();
 void TerminalRead();
-void TerminalWrite(char *txStr);
+void TerminalWrite(uint8_t *txStr);
 void TerminalWriteLength(char *txStr, uint32_t length);
 void TerminalMain();
 

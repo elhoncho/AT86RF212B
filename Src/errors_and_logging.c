@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include "errors_and_logging.h"
 #include "terminal.h"
 #include "interfaceHAL.h"
@@ -18,7 +19,7 @@ uint8_t logging = 1;
 
 void LOG(LOG_LVL lvl, char * message){
 	if(lvl >= MIN_LOG_LVL){
-		InterfaceWriteHAL(message);
+		InterfaceWriteHAL(message, strlen(message));
 	}
 }
 

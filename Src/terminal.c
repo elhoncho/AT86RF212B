@@ -239,8 +239,8 @@ void TerminalRead(){
     }
 }
 
-void TerminalWrite(char *txStr){
-	InterfaceWriteHAL(txStr);
+void TerminalWrite(uint8_t *txStr){
+	InterfaceWriteHAL(txStr, strlen(txStr));
 }
 
 void TerminalMain(){
