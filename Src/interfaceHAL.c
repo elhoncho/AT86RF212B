@@ -26,9 +26,9 @@ static uint8_t echoInput = 0;
 
 
 struct circleBuffer{
-    volatile uint8_t head;
-    volatile uint8_t tail;
-    volatile char buffer[BUFFER_LENGTH];
+    volatile uint16_t head;
+    volatile uint16_t tail;
+    volatile uint8_t buffer[BUFFER_LENGTH];
 };
 
 extern uint8_t newCmd;
@@ -59,19 +59,18 @@ void InterfaceWriteHAL(char *txStr){
 #endif
 }
 
-uint16_t InterfacePopFromInputBufferHAL(){
-	char rxChar;
-	if(popFromBuffer(&rxBuffer, &rxChar)){
-		return rxChar;
+uint8_t InterfacePopFromInputBufferHAL(uint8_t* rxByte){
+	if(popFromBuffer(&rxBuffer, rxByte)){
+		return 1;
 	}
 	else{
 		//return a number beyond one byte range to indicate a failure
-		return 256;
+		return 0;
 	}
 }
 
 uint8_t InterfacePushToInputBufferHAL(char rxChar){
-	if(pushToBuffer(&rxBuffer, rxChar)){
+	if(pushToBuffer(&rxBuffer, rxChar) == 1){
 		char tmpStr[2] = {rxChar, '\0'};
 
 		if(echoInput){
@@ -81,9 +80,29 @@ uint8_t InterfacePushToInputBufferHAL(char rxChar){
 		if(rxChar == '\r' || rxChar == '\n'){
 			newCmd = 1;
 		}
-		return 1;
+		if(rxBuffer.head > rxBuffer.tail){
+			if(rxBuffer.head - rxBuffer.tail <= 127){
+				//Buffer is fine
+				return 1;
+			}
+			else{
+				//Buffer filling up
+				return 2;
+			}
+		}
+		//Buffer wrapped around
+		else{
+			if(((BUFFER_LENGTH - rxBuffer.tail)+rxBuffer.head) <= 127){
+				return 1;
+			}
+			else{
+				//Buffer filling up
+				return 2;
+			}
+		}
 	}
 	else{
+		//Failed to push to buffer
 		return 0;
 	}
 }

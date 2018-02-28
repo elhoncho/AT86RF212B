@@ -174,7 +174,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 	}
 
 	if(config.state == PLL_ON){
-		if(length > 128){
+		if(length > 127){
 			ASSERT(0);
 			if(logging){
 				LOG(LOG_LVL_ERROR, "Frame Too Large");

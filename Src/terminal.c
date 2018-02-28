@@ -168,7 +168,7 @@ void TerminalRead(){
 
         char arg[3][22];
 
-        tmpChar = InterfacePopFromInputBufferHAL();
+        InterfacePopFromInputBufferHAL(&tmpChar);
 
         arg[0][0] = '\0';
         arg[1][0] = '\0';
@@ -188,7 +188,7 @@ void TerminalRead(){
                 i++;
             }
 
-            tmpChar = InterfacePopFromInputBufferHAL();
+            InterfacePopFromInputBufferHAL(&tmpChar);
         }
 
         if(logging){
