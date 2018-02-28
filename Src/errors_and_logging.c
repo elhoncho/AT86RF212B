@@ -13,7 +13,7 @@
 #include "terminal.h"
 #include "interfaceHAL.h"
 
-#define MIN_LOG_LVL 5
+#define MIN_LOG_LVL 1
 
 uint8_t logging = 1;
 

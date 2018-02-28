@@ -10,7 +10,7 @@
 #include <AT86RF212B_Settings.h>
 
 #if STM32
-#include<usbd_cdc.h>
+#include<usbd_cdc_if.h>
 #endif
 void RawModeOpen(){
 	SetEchoInput(0);

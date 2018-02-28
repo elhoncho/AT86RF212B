@@ -25,18 +25,23 @@ static uint8_t echoInput = 0;
 #define BUFFER_LENGTH 512
 
 
-struct circleBuffer{
+typedef struct {
     volatile uint16_t head;
     volatile uint16_t tail;
+    volatile uint16_t space;
     volatile uint8_t buffer[BUFFER_LENGTH];
-};
+}circleBuffer;
 
 extern uint8_t newCmd;
 
-static struct circleBuffer rxBuffer;
+static circleBuffer rxBuffer = {
+	.head = 0,
+	.tail = 0,
+	.space = BUFFER_LENGTH
+};
 
-static uint8_t pushToBuffer(struct circleBuffer *b, const char inChar);
-static uint8_t popFromBuffer(struct circleBuffer *b, char *outChar);
+static uint8_t pushToBuffer(circleBuffer *b, const uint8_t inChar);
+static uint8_t popFromBuffer(circleBuffer *b, uint8_t *outChar);
 
 void SetEchoInput(uint8_t condition){
 	echoInput = condition;
@@ -107,7 +112,7 @@ uint8_t InterfacePushToInputBufferHAL(char rxChar){
 	}
 }
 
-static uint8_t pushToBuffer(struct circleBuffer *b, const char inChar){
+static uint8_t pushToBuffer(circleBuffer *b, const uint8_t inChar){
     if(b->head == BUFFER_LENGTH-1){
         b->head = 0;
     }
@@ -131,7 +136,7 @@ static uint8_t pushToBuffer(struct circleBuffer *b, const char inChar){
     }
 }
 
-static uint8_t popFromBuffer(struct circleBuffer *b, char *outChar){
+static uint8_t popFromBuffer(circleBuffer *b, uint8_t *outChar){
     if(b->tail != b->head){
         if(b->tail == BUFFER_LENGTH-1){
             b->tail = 0;
