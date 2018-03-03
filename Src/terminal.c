@@ -21,8 +21,15 @@
 #include "AT86RF212B_Regesters.h"
 #include "AT86RF212B_Constants.h"
 #include "RawMode.h"
-#include "main.h"
 #include "AT86RF212B_Settings.h"
+
+#if RASPBERRY_PI
+#include "../../main.h"
+#endif
+
+#if STM32
+#include "main.h"
+#endif
 
 #define MAX_STR_LEN 32
 
@@ -158,7 +165,13 @@ void TerminalOpen(){
     TerminalWrite(tmpStr);
     strcpy(tmpStr,"\r\n>");
     TerminalWrite(tmpStr);
+#if STM32
     SetEchoInput(1);
+#endif
+
+#if RASPBERRY_PI
+    SetEchoInput(0);
+#endif
 }
 
 void TermianlClose(){
