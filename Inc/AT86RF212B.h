@@ -54,6 +54,15 @@ typedef struct{
 	uint8_t extAddr_55_48;
 	uint8_t extAddr_63_56;
 
+	uint8_t maxFrameRetries;
+	uint8_t CSMA_LBT_Mode;
+	uint8_t maxCSMA_Retries;
+	uint8_t minBe;
+	uint8_t maxBe;
+	uint8_t slottedOperatin;
+	uint8_t AACK_I_AmCoord;
+	uint8_t AACK_SetPd;
+
 }AT86RF212B_Config;
 
 enum pin{

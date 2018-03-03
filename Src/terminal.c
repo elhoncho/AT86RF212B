@@ -20,12 +20,14 @@
 #include "errors_and_logging.h"
 #include "AT86RF212B_Regesters.h"
 #include "AT86RF212B_Constants.h"
+#include "RawMode.h"
 
 #define MAX_STR_LEN 32
 
 //TODO:Globle variables!...probably need to find a better way to do this
 uint8_t volatile newCmd = 0;
 extern uint8_t logging;
+extern uint8_t AT86RF212B_Mode;
 
 struct commandStruct{
     const char *name;
@@ -65,7 +67,8 @@ static const struct commandStruct commands[] ={
 };
 
 static void RawMode(char *arg1, char *arg2){
-	logging = 0;
+	RawModeOpen();
+	AT86RF212B_Mode = 0;
 }
 
 static void ReadFrame(char *arg1, char *arg2){
@@ -153,6 +156,7 @@ void TerminalOpen(){
     TerminalWrite(tmpStr);
     strcpy(tmpStr,"\r\n>");
     TerminalWrite(tmpStr);
+    SetEchoInput(1);
 }
 
 void TermianlClose(){
@@ -168,14 +172,12 @@ void TerminalRead(){
 
         char arg[3][22];
 
-        InterfacePopFromInputBufferHAL(&tmpChar);
-
         arg[0][0] = '\0';
         arg[1][0] = '\0';
         arg[2][0] = '\0';
 
         i = 0;
-        while(tmpChar != 256){
+        while(InterfacePopFromInputBufferHAL(&tmpChar)){
             uint8_t len = strlen(arg[i]);
 
             //Dont store \r or \n or space or .
@@ -187,8 +189,6 @@ void TerminalRead(){
             else if(tmpChar == 0x20 ||  tmpChar == 0x2E){
                 i++;
             }
-
-            InterfacePopFromInputBufferHAL(&tmpChar);
         }
 
         if(logging){
@@ -245,4 +245,6 @@ void TerminalWrite(uint8_t *txStr){
 
 void TerminalMain(){
     TerminalRead();
+    //TODO: Probably not the best place for this function (allows for the USB to start receiving again)
+    CDC_Enable_USB_Packet();
 }

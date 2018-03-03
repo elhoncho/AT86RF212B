@@ -93,6 +93,14 @@ void AT86RF212B_Open(){
 	config.extAddr_47_40 = AT86RF212B_EXT_ADDR_47_40;
 	config.extAddr_55_48 = AT86RF212B_EXT_ADDR_55_48;
 	config.extAddr_63_56 = AT86RF212B_EXT_ADDR_63_56;
+	config.maxFrameRetries = AT86RF212B_MAX_FRAME_RETRIES;
+	config.CSMA_LBT_Mode = AT86RF212B_CSMA_LBT_MODE;
+	config.maxCSMA_Retries = AT86RF212B_MAX_CSMA_RETRIES;
+	config.minBe = AT86RF212B_MIN_BE;
+	config.maxBe = AT86RF212B_MAX_BE;
+	config.slottedOperatin = AT86RF212B_SLOTTED_OPERATION;
+	config.AACK_I_AmCoord = AT86RF212B_AACK_I_AM_COORD;
+	config.AACK_SetPd = AT86RF212B_AACK_SET_PD;
 
 	AT86RF212B_OpenHAL(1000);
 
@@ -111,6 +119,9 @@ void AT86RF212B_Open(){
 
 void AT86RF212B_ISR_Callback(){
 	interupt = 1;
+	if(logging){
+		LOG(LOG_LVL_DEBUG, "Interrupt Received\r\n");
+	}
 }
 
 void AT86RF212B_Main(){
@@ -203,9 +214,9 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 		//AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
 
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
-		AT86RF212B_Delay(AT86RF212B_tTR8);
+		AT86RF212B_Delay(AT86RF212B_t7);
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
-		PhyStateToRxAACK_On();
+		PhyStateToTxARET_On();
 	}
 	else{
 		ASSERT(0);
@@ -345,7 +356,7 @@ static void 	AT86RF212B_IrqInit (){
 	//Set IRQ Polarity to active high
 	AT86RF212B_BitWrite(SR_IRQ_POLARITY, 0);
 	//Enable Awake IRQ
-	AT86RF212B_RegWrite(RG_IRQ_MASK, (TRX_IRQ_AWAKE_END | TRX_IRQ_PLL_LOCK | TRX_IRQ_TRX_END));
+	AT86RF212B_RegWrite(RG_IRQ_MASK, (TRX_IRQ_AWAKE_END | TRX_IRQ_PLL_LOCK | TRX_IRQ_TRX_END | TRX_IRQ_RX_START | TRX_IRQ_AMI));
 	//Only show enabled interrupts in the IRQ register
 	AT86RF212B_BitWrite(SR_IRQ_MASK_MODE, 0);
 
@@ -539,12 +550,11 @@ void PhyStateToTxARET_On(){
 		PhyStateToTxARET_On();
 	}
 	/* AT86RF212::BUSY_TX */
-/*	else if(IsStateTxBusy()){
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_AACK_ON);
+	else if(IsStateTxBusy()){
+		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_TX_ARET_ON);
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-		StateChangeCheck(CMD_RX_AACK_ON);
+		StateChangeCheck(CMD_TX_ARET_ON);
 	}
-*/
 	else{
 		ASSERT(0);
 		if(logging){
@@ -709,7 +719,6 @@ static void AT86RF212B_SetPhyMode(){
 			}
 			return;
 		}
-
 		AT86RF212B_BitWrite(SR_BPSK_OQPSK, config.useOQPSK);
 		AT86RF212B_BitWrite(SR_SUB_MODE, config.submode);
 		AT86RF212B_BitWrite(SR_OQPSK_DATA_RATE, config.OQPSK_Rate);
@@ -719,6 +728,14 @@ static void AT86RF212B_SetPhyMode(){
 		AT86RF212B_RegWrite(RG_PHY_TX_PWR, config.txPower);
 		AT86RF212B_BitWrite(SR_RX_PDT_LEVEL, config.rxSensLvl);
 		AT86RF212B_BitWrite(SR_TX_AUTO_CRC_ON, config.txCrc);
+		AT86RF212B_BitWrite(SR_MAX_FRAME_RETRIES, config.maxFrameRetries);
+		AT86RF212B_BitWrite(SR_CSMA_LBT_MODE, config.CSMA_LBT_Mode);
+		AT86RF212B_BitWrite(SR_MAX_CSMA_RETRIES, config.maxCSMA_Retries);
+		AT86RF212B_BitWrite(SR_MIN_BE, config.minBe);
+		AT86RF212B_BitWrite(SR_MAX_BE, config.maxBe);
+		AT86RF212B_BitWrite(SR_SLOTTED_OPERATION, config.slottedOperatin);
+		AT86RF212B_BitWrite(SR_AACK_I_AM_COORD, config.AACK_I_AmCoord);
+		AT86RF212B_BitWrite(SR_AACK_SET_PD, config.AACK_SetPd);
 		AT86RF212B_RegWrite(RG_PAN_ID_0, config.panId_7_0);
 		AT86RF212B_RegWrite(RG_PAN_ID_1, config.panId_15_8);
 		AT86RF212B_RegWrite(RG_SHORT_ADDR_0, config.shortAddr_7_0);
