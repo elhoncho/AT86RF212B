@@ -119,9 +119,6 @@ void AT86RF212B_Open(){
 
 void AT86RF212B_ISR_Callback(){
 	interupt = 1;
-	if(logging){
-		LOG(LOG_LVL_DEBUG, "Interrupt Received\r\n");
-	}
 }
 
 void AT86RF212B_Main(){
@@ -216,7 +213,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
 		AT86RF212B_Delay(AT86RF212B_t7);
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
-		PhyStateToTxARET_On();
+		PhyStateToPllOn();
 	}
 	else{
 		ASSERT(0);
@@ -405,8 +402,9 @@ static void AT86RF212B_PowerOnReset(){
 	else{
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
 		}
+		AT86RF212B_TRX_Reset();
 	}
 }
 
@@ -448,11 +446,13 @@ void AT86RF212B_TRX_Reset(){
 		AT86RF212B_Delay(AT86RF212B_tTR13);
 		/* AT86RF212::TRX_OFF */
 		StateChangeCheck(TRX_OFF);
+
+		AT86RF212B_PowerOnReset();
 	}
 	else{
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: This is real bad\r\n");
 		}
 	}
 }
@@ -490,8 +490,9 @@ void PhyStateToPllOn(){
 	else{
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
 		}
+		AT86RF212B_TRX_Reset();
 	}
 }
 
@@ -522,8 +523,9 @@ void PhyStateToRxAACK_On(){
 	else{
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
 		}
+		AT86RF212B_TRX_Reset();
 	}
 }
 
@@ -559,8 +561,9 @@ void PhyStateToTxARET_On(){
 	else{
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
 		}
+		AT86RF212B_TRX_Reset();
 	}
 }
 
@@ -591,8 +594,9 @@ void PhyStateToRxOn(){
 	else{
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
 		}
+		AT86RF212B_TRX_Reset();
 	}
 }
 
@@ -606,8 +610,9 @@ static void PhyCalibrateFTN(){
 	else{
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
 		}
+		AT86RF212B_TRX_Reset();
 	}
 }
 static void PhyCalibratePll(){
@@ -620,8 +625,9 @@ static void PhyCalibratePll(){
 	else{
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
 		}
+		AT86RF212B_TRX_Reset();
 	}
 }
 
@@ -637,8 +643,9 @@ static void AT86RF212B_StateMachineReset(){
 	else{
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
 		}
+		AT86RF212B_TRX_Reset();
 	}
 }
 
@@ -654,8 +661,9 @@ static void AT86RF212B_PhySetChannel(){
 	else{
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
 		}
+		AT86RF212B_TRX_Reset();
 	}
 }
 
@@ -812,7 +820,9 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 	if(!(irqState & expectedIRQ)){
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "Something very strange happened\r\n");
+			uint8_t tmpStr[20];
+			sprintf(tmpStr, "Wrong Interrupt: %i\r\n", irqState);
+			LOG(LOG_LVL_ERROR, tmpStr);
 		}
 		AT86RF212B_WaitForIRQ(expectedIRQ);
 	}
@@ -835,6 +845,7 @@ static uint8_t StateChangeCheck(uint8_t newState){
 		LOG(LOG_LVL_DEBUG, "State Change Success!\r\n");
 		return 1;
 	}
+	return 0;
 }
 
 static void UpdateState(){

@@ -57,9 +57,10 @@ void InterfaceWriteHAL(uint8_t *txStr, uint16_t length){
 	if(hUsbDeviceHS.dev_state == USBD_STATE_CONFIGURED){
 		if((strcmp(txStr, "\r") == 0) || (strcmp(txStr, "\n") == 0)){
 			sprintf(txStr, "\r\n");
+			length = length +1;
 		}
 		//TODO: Fix this, if too much data too fast can lock up here
-		while(CDC_Transmit_HS((uint8_t*)txStr, strlen(txStr)) == USBD_BUSY);
+		while(CDC_Transmit_HS((uint8_t*)txStr, length) == USBD_BUSY);
 	}
 #endif
 }
