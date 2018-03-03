@@ -106,7 +106,7 @@ void AT86RF212B_Open(){
 	AT86RF212B_PhySetChannel();
 
 	//TODO: This needs to change to TRX_OFF
-	PhyStateToRxOn();
+	PhyStateToRxAACK_On();
 }
 
 void AT86RF212B_ISR_Callback(){
@@ -119,7 +119,7 @@ void AT86RF212B_Main(){
 		case P_ON:
 			break;
 		case TRX_OFF:
-			PhyStateToRxOn();
+			PhyStateToRxAACK_On();
 			break;
 		case SLEEP:
 			break;
@@ -129,13 +129,22 @@ void AT86RF212B_Main(){
 			}
 			break;
 		case PLL_ON:
-			PhyStateToRxOn();
+			PhyStateToRxAACK_On();
 			break;
 		case BUSY_TX:
 			break;
 		case BUSY_RX:
 			break;
 		case RX_ON_NOCLK:
+			break;
+		case RX_AACK_ON:
+			if(AT86RF212B_CheckForIRQ() == TRX_IRQ_TRX_END){
+				//AT86RF212B_BitRead(SR_TRAC_STATUS);
+				AT86RF212B_FrameRead();
+			}
+			break;
+			break;
+		case TX_ARET_ON:
 			break;
 	}
 }
@@ -169,11 +178,16 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 }
 
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
+/*
 	if(config.state != PLL_ON){
 		PhyStateToPllOn();
 	}
+	*/
+	if(config.state != TX_ARET_ON){
+		PhyStateToTxARET_On();
+	}
 
-	if(config.state == PLL_ON){
+	if(config.state == TX_ARET_ON){
 		if(length > 127){
 			ASSERT(0);
 			if(logging){
@@ -184,11 +198,14 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 		//TODO: The speed of transmission can be improved by not waiting for all the data to be written before starting the TX phase
 		AT86RF212B_FrameWrite(frame, length);
 
+		//AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
+		//AT86RF212B_Delay(AT86RF212B_t7);
+		//AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
+
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
-		AT86RF212B_Delay(AT86RF212B_t7);
+		AT86RF212B_Delay(AT86RF212B_tTR8);
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
-		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-		PhyStateToPllOn();
+		PhyStateToRxAACK_On();
 	}
 	else{
 		ASSERT(0);
@@ -458,6 +475,71 @@ void PhyStateToPllOn(){
 		StateChangeCheck(PLL_ON);
 	}
 	//TODO: May need to add a state to force to pll on, force to pll on is an unimplemented transition in the programmers guide
+	else{
+		ASSERT(0);
+		if(logging){
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+		}
+	}
+}
+
+void PhyStateToRxAACK_On(){
+	UpdateState();
+	//TODO:Remove this condition, was used for a terminal test
+	if(config.state == RX_AACK_ON){
+		return;
+	}
+	/* AT86RF212::TRX_OFF */
+	if(config.state == TRX_OFF){
+		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_AACK_ON);
+		AT86RF212B_Delay(AT86RF212B_tTR4);
+		StateChangeCheck(RX_AACK_ON);
+	}
+	 /* AT86RF212::PLL_ON */
+	else if(config.state ==  PLL_ON){
+		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_AACK_ON);
+		AT86RF212B_Delay(AT86RF212B_tTR8);
+		StateChangeCheck(CMD_RX_AACK_ON);
+	}
+	/* AT86RF212::BUSY_TX */
+	else if(IsStateTxBusy()){
+		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_AACK_ON);
+		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+		StateChangeCheck(CMD_RX_AACK_ON);
+	}
+	else{
+		ASSERT(0);
+		if(logging){
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+		}
+	}
+}
+
+void PhyStateToTxARET_On(){
+	UpdateState();
+	//TODO:Remove this condition, was used for a terminal test
+	if(config.state == TX_ARET_ON){
+		return;
+	}
+	/* AT86RF212::TRX_OFF */
+	if(config.state == TRX_OFF){
+		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_TX_ARET_ON);
+		AT86RF212B_Delay(AT86RF212B_tTR4);
+		StateChangeCheck(CMD_TX_ARET_ON);
+	}
+	 /* AT86RF212::PLL_ON */
+	else if(config.state ==  PLL_ON){
+		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_TX_ARET_ON);
+		AT86RF212B_Delay(AT86RF212B_tTR8);
+		StateChangeCheck(CMD_TX_ARET_ON);
+	}
+	/* AT86RF212::BUSY_TX */
+/*	else if(IsStateTxBusy()){
+		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_AACK_ON);
+		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+		StateChangeCheck(CMD_RX_AACK_ON);
+	}
+*/
 	else{
 		ASSERT(0);
 		if(logging){

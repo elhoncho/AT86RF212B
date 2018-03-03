@@ -69,7 +69,6 @@ uint8_t InterfacePopFromInputBufferHAL(uint8_t* rxByte){
 		return 1;
 	}
 	else{
-		//return a number beyond one byte range to indicate a failure
 		return 0;
 	}
 }

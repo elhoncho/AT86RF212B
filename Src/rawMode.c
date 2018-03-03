@@ -44,6 +44,7 @@ void RawModeMain(){
 				AT86RF212B_TxData(txData, i+1);
 				//Continue clearing buffer
 				RawModeMain();
+				return;
 			}
 		}
 	}
