@@ -49,7 +49,7 @@ void SetEchoInput(uint8_t condition){
 
 void InterfaceWriteHAL(uint8_t *txStr, uint16_t length){
 #if RASPBERRY_PI
-	fwrite(txStr, sizeof(uint8_t), length, stdio);
+	fwrite(txStr, sizeof(uint8_t), length, stdout);
 	fflush(stdout);
 #endif
 
