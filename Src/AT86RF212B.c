@@ -447,7 +447,9 @@ void AT86RF212B_TRX_Reset(){
 		/* AT86RF212::TRX_OFF */
 		StateChangeCheck(TRX_OFF);
 
-		AT86RF212B_PowerOnReset();
+		//Run power on reset sequence
+		AT86RF212B_SetPhyMode();
+		AT86RF212B_PhySetChannel();
 	}
 	else{
 		ASSERT(0);

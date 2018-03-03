@@ -81,15 +81,7 @@ static void RawMode(char *arg1, char *arg2){
 }
 
 static void ReadFrame(char *arg1, char *arg2){
-	//Max frame size 132 bytes (6.3.2)
-	PhyStateToRxOn();
-
-	if(logging){
-		char tmpStr[MAX_STR_LEN];
-		TerminalWrite("Frame Data:\r\n");
-		sprintf(tmpStr, "\r\nLength: %i\r\n", AT86RF212B_FrameRead());
-		TerminalWrite(tmpStr);
-	}
+	AT86RF212B_FrameRead();
 }
 
 static void WriteFrame(char *arg1, char *arg2){
