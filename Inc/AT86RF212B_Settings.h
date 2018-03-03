@@ -34,7 +34,7 @@
 //Switches between CSMA-CA Listen Before Talk algorithm within TX_ARET mode (0 [CSMA-CA] or 1 [LBT])
 #define AT86RF212B_CSMA_LBT_MODE 	 0x00
 //Number of retries in TX_ARET mode to repeat the CSMA-CA procedure before the transaction gets cancled (0x00[no retries] - 0x05[five retries] or 0x07[immedate frame transmission withou breforming CSMA-CA])
-#define AT86RF212B_MAX_CSMA_RETRIES  0X06
+#define AT86RF212B_MAX_CSMA_RETRIES  0X04
 //Maximum backoff exponent in the CSMA-CA algorithm (0x00 - 0x08)
 #define AT86RF212B_MIN_BE 			0x05
 //Minimum backoff exponent in the CSMA-CA algorithm (MAX_BE-1 to MAX_BE or 0x00)
@@ -46,10 +46,10 @@
 //0 = no pending data 0 ; 1 = pending data
 #define AT86RF212B_AACK_SET_PD		0x00
 //Address Filtering
-#define AT86RF212B_PAN_ID_7_0 		0xFF
-#define AT86RF212B_PAN_ID_15_8 		0xFF
-#define AT86RF212B_SHORT_ADDR_7_0	0xFF
-#define AT86RF212B_SHORT_ADDR_15_8 	0xFF
+#define AT86RF212B_PAN_ID_7_0 		0xDE
+#define AT86RF212B_PAN_ID_15_8 		0xAD
+#define AT86RF212B_SHORT_ADDR_7_0	0xBE
+#define AT86RF212B_SHORT_ADDR_15_8 	0xEF
 #define AT86RF212B_EXT_ADDR_7_0		0x00
 #define AT86RF212B_EXT_ADDR_15_8 	0x00
 #define AT86RF212B_EXT_ADDR_23_16	0x00

@@ -21,6 +21,8 @@
 #include "AT86RF212B_Regesters.h"
 #include "AT86RF212B_Constants.h"
 #include "RawMode.h"
+#include "main.h"
+#include "AT86RF212B_Settings.h"
 
 #define MAX_STR_LEN 32
 
@@ -245,6 +247,8 @@ void TerminalWrite(uint8_t *txStr){
 
 void TerminalMain(){
     TerminalRead();
+#if STM32
     //TODO: Probably not the best place for this function (allows for the USB to start receiving again)
     CDC_Enable_USB_Packet();
+#endif
 }

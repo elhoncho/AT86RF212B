@@ -356,7 +356,8 @@ static void 	AT86RF212B_IrqInit (){
 	//Set IRQ Polarity to active high
 	AT86RF212B_BitWrite(SR_IRQ_POLARITY, 0);
 	//Enable Awake IRQ
-	AT86RF212B_RegWrite(RG_IRQ_MASK, (TRX_IRQ_AWAKE_END | TRX_IRQ_PLL_LOCK | TRX_IRQ_TRX_END | TRX_IRQ_RX_START | TRX_IRQ_AMI));
+	//AT86RF212B_RegWrite(RG_IRQ_MASK, (TRX_IRQ_AWAKE_END | TRX_IRQ_PLL_LOCK | TRX_IRQ_TRX_END | TRX_IRQ_RX_START | TRX_IRQ_AMI));
+	AT86RF212B_RegWrite(RG_IRQ_MASK, 0xFF);
 	//Only show enabled interrupts in the IRQ register
 	AT86RF212B_BitWrite(SR_IRQ_MASK_MODE, 0);
 
