@@ -93,7 +93,7 @@ uint8_t InterfacePushToInputBufferHAL(char rxChar){
 		char tmpStr[2] = {rxChar, '\0'};
 
 		if(echoInput){
-			InterfaceWriteToLogHAL(tmpStr, 2);
+			InterfaceWriteToLogHAL((uint8_t*)tmpStr, 2);
 		}
 
 		if(rxChar == '\r' || rxChar == '\n'){
