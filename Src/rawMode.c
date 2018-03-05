@@ -17,12 +17,11 @@ void RawModeOpen(){
 }
 
 
-#define MAX_PACKET 125
 void RawModeMain(){
-	static uint8_t txData[MAX_PACKET];
+	static uint8_t txData[AT86RF212B_MAX_DATA];
 	uint8_t i;
 	uint8_t tmpChar;
-	for(i = 0; i < MAX_PACKET; i++){
+	for(i = 0; i < AT86RF212B_MAX_DATA; i++){
 		uint8_t bufferStatus = InterfacePopFromInputBufferHAL(&tmpChar);
 		if(bufferStatus == 0){
 			//Buffer empty
@@ -35,10 +34,10 @@ void RawModeMain(){
 			}
 		}
 		else if(bufferStatus == 1){
-			if(i < MAX_PACKET-2){
+			if(i < AT86RF212B_MAX_DATA-1){
 				txData[i] = tmpChar;
 			}
-			else if(i == MAX_PACKET-1){
+			else if(i == AT86RF212B_MAX_DATA-1){
 				//Buffer not empty
 				//Send current packet length is i+1 because i is at a 0 offset
 				AT86RF212B_TxData(txData, i+1);
@@ -49,7 +48,9 @@ void RawModeMain(){
 		}
 	}
 
-	AT86RF212B_TxData(txData, i);
+	if(i){
+		AT86RF212B_TxData(txData, i);
+	}
 #if STM32
 	CDC_Enable_USB_Packet();
 #endif

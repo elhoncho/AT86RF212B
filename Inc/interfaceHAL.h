@@ -10,7 +10,8 @@
 
 #include <stdint.h>
 
-void InterfaceWriteHAL(uint8_t *txStr, uint16_t length);
+void InterfaceWriteToLogHAL(uint8_t *txStr, uint16_t length);
+void InterfaceWriteToDataOutputHAL(uint8_t * pTxData, uint32_t length);
 uint16_t InterfacePopFromInputBufferHAL();
 uint8_t InterfacePushToInputBufferHAL(char rxChar);
 void SetEchoInput(uint8_t condition);

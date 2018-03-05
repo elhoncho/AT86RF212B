@@ -143,6 +143,16 @@ void AT86RF212B_Main(){
 			break;
 		case BUSY_TX:
 			break;
+		case BUSY_TX_ARET:
+			if(logging){
+				AT86RF212B_CheckForIRQ();
+			}
+			break;
+		case TX_ARET_ON:
+			if(logging){
+				AT86RF212B_CheckForIRQ();
+			}
+			break;
 		case BUSY_RX:
 			break;
 		case RX_ON_NOCLK:
@@ -152,9 +162,6 @@ void AT86RF212B_Main(){
 				//AT86RF212B_BitRead(SR_TRAC_STATUS);
 				AT86RF212B_FrameRead();
 			}
-			break;
-			break;
-		case TX_ARET_ON:
 			break;
 	}
 }
@@ -187,17 +194,19 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 	return pRxData[1];
 }
 
+//Length is the lengt of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 /*
 	if(config.state != PLL_ON){
 		PhyStateToPllOn();
 	}
 	*/
+	UpdateState();
 	if(config.state != TX_ARET_ON){
 		PhyStateToTxARET_On();
+		AT86RF212B_TxData(frame, length);
 	}
-
-	if(config.state == TX_ARET_ON){
+	else if(config.state == TX_ARET_ON){
 		if(length > AT86RF212B_MAX_DATA){
 			ASSERT(0);
 			if(logging){
@@ -211,7 +220,9 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
 		AT86RF212B_Delay(AT86RF212B_t7);
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
-		//PhyStateToPllOn();
+		//Wait untill done transmitting data
+		//TODO: This may affect speed
+		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
 	}
 	else{
 		ASSERT(0);
@@ -290,15 +301,19 @@ static uint8_t 	AT86RF212B_FrameLengthRead(){
 }
 
 uint8_t	AT86RF212B_FrameRead(){
+	//Change to PLL on to prevent data from being overwritten by a new RX packet
+	PhyStateToPllOn();
+
 	if(config.txCrc){
 		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
 			//If CRC enabled and CRC is not valid
+			PhyStateToRxAACK_On();
 			return 0;
 		}
 	}
 
 	uint8_t length = AT86RF212B_FrameLengthRead();
-	if(length <= 128){
+	if(length <= 127){
 		//Length received is the length of the data plus two bytes for the command and PRI bytes
 		//add 3 to the length for the ED LQI and RX_STATUS bytes
 		uint8_t nLength = length+3;
@@ -308,6 +323,9 @@ uint8_t	AT86RF212B_FrameRead(){
 		pTxData[0] = 0x20;
 
 		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+		//Change back to RxAACK to recieve next frame
+		PhyStateToRxAACK_On();
+
 		//Energy Detection (ED) pRxData[length]
 		//Link Quality Indication (LQI) pRxData[length+1]
 		//RX_STATUS pRxData[length+2]
@@ -333,7 +351,7 @@ uint8_t	AT86RF212B_FrameRead(){
 		uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
 		uint8_t data[dataLength];
 		memcpy(data, &pRxData[AT86RF212B_DATA_OFFSET], dataLength);
-		AT86RF212B_DataOutputHAL(data, dataLength);
+		InterfaceWriteToDataOutputHAL(data, dataLength);
 	}
 	else{
 		ASSERT(0);
@@ -346,21 +364,21 @@ uint8_t	AT86RF212B_FrameRead(){
 
 static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
 	static uint8_t sequenceNumber = 0;
-	//The length here has to be the length of the data and header plus 2 for the frame check sequence if enabled
+	//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
 #if AT86RF212B_TX_CRC
-	uint8_t nLength = length+9;
+	uint8_t nLength = length+11;
 #else
-	uint8_t nLength = length+7;
+	uint8_t nLength = length+9;
 #endif
 
 	uint8_t pTxData[nLength];
 	uint8_t pRxData[nLength];
 
-	//Frame wright command
+	//Frame write command
 	pTxData[0] = 0x60;
 
-	//PHR
-	pTxData[1] = nLength;
+	//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
+	pTxData[1] = nLength-2;
 
 	//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
 	pTxData[2] = 0x21;
@@ -863,7 +881,7 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 		ASSERT(0);
 		if(logging){
 			uint8_t tmpStr[20];
-			sprintf(tmpStr, "Wrong Interrupt: %i\r\n", irqState);
+			sprintf(tmpStr, "Wrong Interrupt: %02X\r\n", irqState);
 			LOG(LOG_LVL_ERROR, tmpStr);
 		}
 		AT86RF212B_WaitForIRQ(expectedIRQ);

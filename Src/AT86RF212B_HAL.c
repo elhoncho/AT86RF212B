@@ -62,21 +62,6 @@ void HAL_Callback();
 
 #endif
 
-void AT86RF212B_DataOutputHAL(uint8_t * pTxData, uint32_t length){
-	#if RASPBERRY_PI
-	fwrite(pTxData, sizeof(uint8_t), length, stdout);
-	fflush(stdout);
-	#endif
-
-	#if STM32
-	if(hUsbDeviceHS.dev_state == USBD_STATE_CONFIGURED){
-		//TODO: Fix this, can lock up here
-		while(CDC_Transmit_HS(pTxData, length) == USBD_BUSY);
-	}
-	#endif
-}
-
-
 void AT86RF212B_WritePinHAL(uint8_t pin, uint8_t state){
 	uint16_t GPIO_PIN;
 

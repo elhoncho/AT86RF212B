@@ -47,9 +47,23 @@ void SetEchoInput(uint8_t condition){
 	echoInput = condition;
 }
 
-void InterfaceWriteHAL(uint8_t *txStr, uint16_t length){
+void InterfaceWriteToDataOutputHAL(uint8_t * pTxData, uint32_t length){
+	#if RASPBERRY_PI
+	fwrite(pTxData, sizeof(uint8_t), length, stdout);
+	fflush(stdout);
+	#endif
+
+	#if STM32
+	if(hUsbDeviceHS.dev_state == USBD_STATE_CONFIGURED){
+		//TODO: Fix this, can lock up here
+		while(CDC_Transmit_HS(pTxData, length) == USBD_BUSY);
+	}
+	#endif
+}
+
+void InterfaceWriteToLogHAL(uint8_t *txStr, uint16_t length){
 #if RASPBERRY_PI
-	fwrite(txStr, sizeof(uint8_t), length, stdout);
+	fwrite(txStr, sizeof(uint8_t), length, stderr);
 	fflush(stdout);
 #endif
 
@@ -79,7 +93,7 @@ uint8_t InterfacePushToInputBufferHAL(char rxChar){
 		char tmpStr[2] = {rxChar, '\0'};
 
 		if(echoInput){
-			InterfaceWriteHAL(tmpStr, 2);
+			InterfaceWriteToLogHAL(tmpStr, 2);
 		}
 
 		if(rxChar == '\r' || rxChar == '\n'){
