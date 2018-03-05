@@ -334,20 +334,25 @@ uint8_t	AT86RF212B_FrameRead(){
 
 static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
 	static uint8_t sequenceNumber = 0;
-	//The length here has to be the length of the data plus 2 for the frame check sequence if enabled
+	//The length here has to be the length of the data and header plus 2 for the frame check sequence if enabled
 #if AT86RF212B_TX_CRC
-	uint8_t nLength = length+2;
+	uint8_t nLength = length+13;
 #else
-	uint8_t nLength = length;
+	uint8_t nLength = length+9;
 #endif
 
 	uint8_t pTxData[nLength];
 	uint8_t pRxData[nLength];
 
+	//Frame wright command
 	pTxData[0] = 0x60;
+
+	//PHR
 	pTxData[1] = nLength;
+
+	//FCF
 	pTxData[2] = 0x26;
-	pTxData[3] = 0x20;
+	pTxData[3] = 0x22;
 	//Sequence number
 	pTxData[4] = sequenceNumber;
 	//Target PAN
@@ -356,7 +361,15 @@ static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
 	//Target ID
 	pTxData[7] = AT86RF212B_SHORT_ADDR_TARGET_7_0;
 	pTxData[8] = AT86RF212B_SHORT_ADDR_TARGET_15_8;
-	memcpy(&pTxData[9], frame, length);
+
+	//Source PAN
+	pTxData[9] = AT86RF212B_PAN_ID_7_0;
+	pTxData[10] = AT86RF212B_PAN_ID_15_8;
+	//Target ID
+	pTxData[11] = AT86RF212B_SHORT_ADDR_7_0;
+	pTxData[12] = AT86RF212B_SHORT_ADDR_15_8;
+
+	memcpy(&pTxData[13], frame, length);
 
 	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 

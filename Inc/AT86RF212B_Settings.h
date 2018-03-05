@@ -16,7 +16,7 @@
 
 //Settings
 
-#define AT86RF212B_MAX_DATA 118
+#define AT86RF212B_MAX_DATA 114
 
 //Change this to set the RF mode
 #define AT86RF212B_PHY_MODE 		AT86RF212B_O_QPSK_100;
