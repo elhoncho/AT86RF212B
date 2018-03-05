@@ -29,6 +29,7 @@
 
 #if STM32
 #include "main.h"
+#include "usbd_cdc_if.h"
 #endif
 
 #define MAX_STR_LEN 32
@@ -111,13 +112,13 @@ static void ReadFrame(char *arg1, char *arg2){
 }
 
 static void WriteFrame(char *arg1, char *arg2){
-	AT86RF212B_TxData(arg1, strlen(arg1));
+	AT86RF212B_TxData((uint8_t*)arg1, strlen(arg1));
 }
 
 static void TestBit(char *arg1, char *arg2){
-	uint8_t tmpStr[MAX_STR_LEN];
-	sprintf((char *)tmpStr, "%i\r\n", AT86RF212B_BitRead(strtol(arg1, NULL, 16), 0, strtol(arg2, NULL, 10)));
-	TerminalWrite((char *)tmpStr);
+	char tmpStr[MAX_STR_LEN];
+	sprintf(tmpStr, "%i\r\n", AT86RF212B_BitRead(strtol(arg1, NULL, 16), 0, strtol(arg2, NULL, 10)));
+	TerminalWrite((uint8_t*)tmpStr);
 }
 
 static void TestSleep(char *arg1, char *arg2){
@@ -134,14 +135,14 @@ static void GetIDs(char *arg1, char *arg2){
 
 static void WriteRegister(char *arg1, char *arg2){
 	char tmpStr[MAX_STR_LEN];
-	sprintf(tmpStr, "0x%02X\r\n", AT86RF212B_RegWrite(strtol(arg1, NULL, 16), strtol(arg2, NULL, 16)));
-	TerminalWrite(tmpStr);
+	sprintf(tmpStr, "0x%02X\r\n", AT86RF212B_RegWrite((uint8_t)strtol(arg1, NULL, 16), (uint8_t)strtol(arg2, NULL, 16)));
+	TerminalWrite((uint8_t*)tmpStr);
 }
 
 static void ReadRegister(char *arg1, char *arg2){
 	char tmpStr[MAX_STR_LEN];
 	sprintf(tmpStr, "0x%02X\r\n", AT86RF212B_RegRead(strtol(arg1, NULL, 16)));
-	TerminalWrite(tmpStr);
+	TerminalWrite((uint8_t*)tmpStr);
 }
 
 static void ToggelDebug(char *arg1, char *arg2){
@@ -158,31 +159,31 @@ static void ListCommands(char *arg1, char *arg2){
     uint8_t i = 0;
     while(commands[i].execute){
         strcpy(tmpStr, commands[i].name);
-        TerminalWrite(tmpStr);
+        TerminalWrite((uint8_t*)tmpStr);
         strcpy(tmpStr, " - ");
-        TerminalWrite(tmpStr);
+        TerminalWrite((uint8_t*)tmpStr);
         strcpy(tmpStr, commands[i].help);
-        TerminalWrite(tmpStr);
+        TerminalWrite((uint8_t*)tmpStr);
         strcpy(tmpStr,"\r\n");
-        TerminalWrite(tmpStr);
+        TerminalWrite((uint8_t*)tmpStr);
         i++;
     }
 }
 static void CmdClear(char *arg1, char *arg2){
     char tmpStr[MAX_STR_LEN];
     strcpy(tmpStr, "\033[2J\033[;H");
-    TerminalWrite(tmpStr);
+    TerminalWrite((uint8_t*)tmpStr);
 }
 
 void TerminalOpen(){
 	//TODO: Get this to run when the terminal is opened
     char tmpStr[MAX_STR_LEN];
     strcpy(tmpStr, "\033[2J\033[;H");
-    TerminalWrite(tmpStr);
+    TerminalWrite((uint8_t*)tmpStr);
     strcpy(tmpStr,"Battle Control Online:");
-    TerminalWrite(tmpStr);
+    TerminalWrite((uint8_t*)tmpStr);
     strcpy(tmpStr,"\r\n>");
-    TerminalWrite(tmpStr);
+    TerminalWrite((uint8_t*)tmpStr);
 #if STM32
     SetEchoInput(1);
 #endif
@@ -252,7 +253,7 @@ void TerminalRead(){
                     //Write prompt char >
                     tmpStr[0] = '>';
                     tmpStr[1] = '\0';
-                    TerminalWrite(tmpStr);
+                    TerminalWrite((uint8_t*)tmpStr);
                     i = 0;
                     break;
                 }
@@ -261,10 +262,10 @@ void TerminalRead(){
             //i is set to 0 if a command is found
             if(i != 0){
                 strcpy(tmpStr, "\r\n");
-                TerminalWrite(tmpStr);
+                TerminalWrite((uint8_t*)tmpStr);
 
                 strcpy(tmpStr, "No Command Found \r\n>");
-                TerminalWrite(tmpStr);
+                TerminalWrite((uint8_t*)tmpStr);
             }
         }
 
