@@ -329,8 +329,8 @@ uint8_t	AT86RF212B_FrameRead(){
 
 			LOG(LOG_LVL_INFO, "\r\n>");
 		}
-		//length - AT86RF212B_DATA_OFFSET (header bytes) - 2 Frame Check Bits
-		uint8_t dataLength = length-AT86RF212B_DATA_OFFSET-2;
+		//length - AT86RF212B_DATA_OFFSET (header bytes)
+		uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
 		uint8_t data[dataLength];
 		memcpy(data, &pRxData[AT86RF212B_DATA_OFFSET], dataLength);
 		AT86RF212B_DataOutputHAL(data, dataLength);
