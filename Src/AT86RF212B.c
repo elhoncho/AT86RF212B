@@ -312,10 +312,21 @@ uint8_t	AT86RF212B_FrameRead(){
 		//Link Quality Indication (LQI) pRxData[length+1]
 		//RX_STATUS pRxData[length+2]
 		if(logging){
-			//First char is the PHY_STATUS bit
-			pRxData[length] = 0;
+
 			LOG(LOG_LVL_DEBUG, "\r\nData Received: \r\n");
-			LOG(LOG_LVL_DEBUG, (char *)&pRxData[2]);
+
+			char tmpStr[20];
+			int i = 0;
+			for(i = 0; i < nLength; i++){
+				if(pRxData[i] == 0){
+					sprintf(tmpStr, "0x%02X : \r\n", pRxData[i]);
+				}
+				else{
+					sprintf(tmpStr, "0x%02X : %c\r\n", pRxData[i], pRxData[i]);
+				}
+				LOG(LOG_LVL_DEBUG, tmpStr);
+			}
+
 			LOG(LOG_LVL_DEBUG, "\r\n>");
 		}
 		//nLength-5 because data + 2 bytes from command and PHR + 3 bytes ED LQI and RX_STATUS
