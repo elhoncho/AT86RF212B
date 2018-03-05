@@ -40,8 +40,7 @@ static uint8_t 	IsStateCmd();
 static uint8_t 	AT86RF212B_CheckForIRQ();
 static void 	AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length);
 static void 	AT86RF212B_Delay(uint8_t time);
-static void 	PhyStateToTxARET_On();
-static void 	PhyStateToRxAACK_On();
+static void 	AT86RF212B_PhyStateChange(uint8_t newState);
 
 /*
 static void 	AT86RF212B_AES_Io (uint8_t mode, uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata);
@@ -116,7 +115,7 @@ void AT86RF212B_Open(){
 	AT86RF212B_PhySetChannel();
 
 	//TODO: This needs to change to TRX_OFF
-	PhyStateToRxAACK_On();
+	AT86RF212B_PhyStateChange(RX_AACK_ON);
 }
 
 void AT86RF212B_ISR_Callback(){
@@ -129,7 +128,7 @@ void AT86RF212B_Main(){
 		case P_ON:
 			break;
 		case TRX_OFF:
-			PhyStateToRxAACK_On();
+			AT86RF212B_PhyStateChange(RX_AACK_ON);
 			break;
 		case SLEEP:
 			break;
@@ -139,7 +138,7 @@ void AT86RF212B_Main(){
 			}
 			break;
 		case PLL_ON:
-			PhyStateToRxAACK_On();
+			AT86RF212B_PhyStateChange(RX_AACK_ON);
 			break;
 		case BUSY_TX:
 			break;
@@ -203,7 +202,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 	*/
 	UpdateState();
 	if(config.state != TX_ARET_ON){
-		PhyStateToTxARET_On();
+		AT86RF212B_PhyStateChange(TX_ARET_ON);
 		AT86RF212B_TxData(frame, length);
 	}
 	else if(config.state == TX_ARET_ON){
@@ -302,12 +301,12 @@ static uint8_t 	AT86RF212B_FrameLengthRead(){
 
 uint8_t	AT86RF212B_FrameRead(){
 	//Change to PLL on to prevent data from being overwritten by a new RX packet
-	PhyStateToPllOn();
+	AT86RF212B_PhyStateChange(PLL_ON);
 
 	if(config.txCrc){
 		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
 			//If CRC enabled and CRC is not valid
-			PhyStateToRxAACK_On();
+			AT86RF212B_PhyStateChange(RX_AACK_ON);
 			return 0;
 		}
 	}
@@ -324,7 +323,7 @@ uint8_t	AT86RF212B_FrameRead(){
 
 		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 		//Change back to RxAACK to recieve next frame
-		PhyStateToRxAACK_On();
+		AT86RF212B_PhyStateChange(RX_AACK_ON);
 
 		//Energy Detection (ED) pRxData[length]
 		//Link Quality Indication (LQI) pRxData[length+1]
@@ -517,149 +516,148 @@ void AT86RF212B_TRX_Reset(){
 	}
 }
 
-void PhyStateToPllOn(){
+void AT86RF212B_PhyStateChange(uint8_t newState){
 	UpdateState();
-	if(config.state == PLL_ON){
-		return;
-	}
-	if(config.state == TRX_OFF){
+	switch(newState){
+	case PLL_ON:
+		if(config.state == PLL_ON){
+			return;
+		}
+		if(config.state == TRX_OFF){
+			/* AT86RF212::TRX_OFF */
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
+			AT86RF212B_WaitForIRQ(TRX_IRQ_PLL_LOCK);
+			StateChangeCheck(PLL_ON);
+		}
+		else if(IsStatePllActive()){
+			/* AT86RF212::[PLL_ACTIVE] */
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
+			AT86RF212B_Delay(AT86RF212B_tTR9);
+			StateChangeCheck(PLL_ON);
+		}
+		else if(IsStateBusy()){
+			/* AT86RF212::[BUSY] */
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
+			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+			StateChangeCheck(PLL_ON);
+		}
+		else if(config.state == BUSY_RX_AACK){
+			/* AT86RF212::BUSY_RX_AACK */
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
+			AT86RF212B_Delay(AT86RF212B_tFrame);
+			StateChangeCheck(PLL_ON);
+		}
+		//TODO: May need to add a state to force to pll on, force to pll on is an unimplemented transition in the programmers guide
+		else{
+			ASSERT(0);
+			if(logging){
+				LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
+			}
+			AT86RF212B_TRX_Reset();
+		}
+		break;
+
+
+	case RX_AACK_ON:
+		//TODO:Remove this condition, was used for a terminal test
+		if(config.state == RX_AACK_ON){
+			return;
+		}
 		/* AT86RF212::TRX_OFF */
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
-		AT86RF212B_WaitForIRQ(TRX_IRQ_PLL_LOCK);
-		StateChangeCheck(PLL_ON);
-	}
-	else if(IsStatePllActive()){
-		/* AT86RF212::[PLL_ACTIVE] */
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
-		AT86RF212B_Delay(AT86RF212B_tTR9);
-		StateChangeCheck(PLL_ON);
-	}
-	else if(IsStateBusy()){
-		/* AT86RF212::[BUSY] */
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
-		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-		StateChangeCheck(PLL_ON);
-	}
-	else if(config.state == BUSY_RX_AACK){
-		/* AT86RF212::BUSY_RX_AACK */
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_PLL_ON);
-		AT86RF212B_Delay(AT86RF212B_tFrame);
-		StateChangeCheck(PLL_ON);
-	}
-	//TODO: May need to add a state to force to pll on, force to pll on is an unimplemented transition in the programmers guide
-	else{
-		ASSERT(0);
-		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
+		if(config.state == TRX_OFF){
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_AACK_ON);
+			AT86RF212B_Delay(AT86RF212B_tTR4);
+			StateChangeCheck(RX_AACK_ON);
 		}
-		AT86RF212B_TRX_Reset();
+		 /* AT86RF212::PLL_ON */
+		else if(config.state ==  PLL_ON){
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_AACK_ON);
+			AT86RF212B_Delay(AT86RF212B_tTR8);
+			StateChangeCheck(CMD_RX_AACK_ON);
+		}
+		/* AT86RF212::BUSY_TX */
+		else if(IsStateTxBusy()){
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_AACK_ON);
+			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+			StateChangeCheck(CMD_RX_AACK_ON);
+		}
+		else{
+			ASSERT(0);
+			if(logging){
+				LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
+			}
+			AT86RF212B_TRX_Reset();
+		}
+		break;
+	case TX_ARET_ON:
+		//TODO:Remove this condition, was used for a terminal test
+		if(config.state == TX_ARET_ON){
+			return;
+		}
+		/* AT86RF212::TRX_OFF */
+		if(config.state == TRX_OFF){
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_TX_ARET_ON);
+			AT86RF212B_Delay(AT86RF212B_tTR4);
+			StateChangeCheck(CMD_TX_ARET_ON);
+		}
+		 /* AT86RF212::PLL_ON */
+		else if(config.state ==  PLL_ON){
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_TX_ARET_ON);
+			AT86RF212B_Delay(AT86RF212B_tTR8);
+			StateChangeCheck(CMD_TX_ARET_ON);
+		}
+		 /* AT86RF212::RX_AACK_ON */
+		else if(config.state ==  RX_AACK_ON){
+			AT86RF212B_PhyStateChange(PLL_ON);
+			AT86RF212B_PhyStateChange(TX_ARET_ON);
+		}
+		/* AT86RF212::BUSY_TX */
+		else if(IsStateTxBusy()){
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_TX_ARET_ON);
+			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+			StateChangeCheck(CMD_TX_ARET_ON);
+		}
+		else{
+			ASSERT(0);
+			if(logging){
+				LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
+			}
+			AT86RF212B_TRX_Reset();
+		}
+		break;
+	case RX_ON:
+		//TODO:Remove this condition, was used for a terminal test
+		if(config.state == RX_ON){
+			return;
+		}
+		/* AT86RF212::TRX_OFF */
+		if(config.state == TRX_OFF){
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_ON);
+			AT86RF212B_Delay(AT86RF212B_tTR6);
+			StateChangeCheck(RX_ON);
+		}
+		 /* AT86RF212::PLL_ON */
+		else if(config.state ==  PLL_ON){
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_ON);
+			AT86RF212B_Delay(AT86RF212B_tTR8);
+			StateChangeCheck(RX_ON);
+		}
+		/* AT86RF212::BUSY_TX */
+		else if(IsStateTxBusy()){
+			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_ON);
+			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+			StateChangeCheck(RX_ON);
+		}
+		else{
+			ASSERT(0);
+			if(logging){
+				LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
+			}
+			AT86RF212B_TRX_Reset();
+		}
+		break;
 	}
 }
-
-static void PhyStateToRxAACK_On(){
-	UpdateState();
-	//TODO:Remove this condition, was used for a terminal test
-	if(config.state == RX_AACK_ON){
-		return;
-	}
-	/* AT86RF212::TRX_OFF */
-	if(config.state == TRX_OFF){
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_AACK_ON);
-		AT86RF212B_Delay(AT86RF212B_tTR4);
-		StateChangeCheck(RX_AACK_ON);
-	}
-	 /* AT86RF212::PLL_ON */
-	else if(config.state ==  PLL_ON){
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_AACK_ON);
-		AT86RF212B_Delay(AT86RF212B_tTR8);
-		StateChangeCheck(CMD_RX_AACK_ON);
-	}
-	/* AT86RF212::BUSY_TX */
-	else if(IsStateTxBusy()){
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_AACK_ON);
-		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-		StateChangeCheck(CMD_RX_AACK_ON);
-	}
-	else{
-		ASSERT(0);
-		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
-		}
-		AT86RF212B_TRX_Reset();
-	}
-}
-
-static void PhyStateToTxARET_On(){
-	UpdateState();
-	//TODO:Remove this condition, was used for a terminal test
-	if(config.state == TX_ARET_ON){
-		return;
-	}
-	/* AT86RF212::TRX_OFF */
-	if(config.state == TRX_OFF){
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_TX_ARET_ON);
-		AT86RF212B_Delay(AT86RF212B_tTR4);
-		StateChangeCheck(CMD_TX_ARET_ON);
-	}
-	 /* AT86RF212::PLL_ON */
-	else if(config.state ==  PLL_ON){
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_TX_ARET_ON);
-		AT86RF212B_Delay(AT86RF212B_tTR8);
-		StateChangeCheck(CMD_TX_ARET_ON);
-	}
-	 /* AT86RF212::RX_AACK_ON */
-	else if(config.state ==  RX_AACK_ON){
-		PhyStateToPllOn();
-		PhyStateToTxARET_On();
-	}
-	/* AT86RF212::BUSY_TX */
-	else if(IsStateTxBusy()){
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_TX_ARET_ON);
-		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-		StateChangeCheck(CMD_TX_ARET_ON);
-	}
-	else{
-		ASSERT(0);
-		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
-		}
-		AT86RF212B_TRX_Reset();
-	}
-}
-
-void PhyStateToRxOn(){
-	UpdateState();
-	//TODO:Remove this condition, was used for a terminal test
-	if(config.state == RX_ON){
-		return;
-	}
-	/* AT86RF212::TRX_OFF */
-	if(config.state == TRX_OFF){
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_ON);
-		AT86RF212B_Delay(AT86RF212B_tTR6);
-		StateChangeCheck(RX_ON);
-	}
-	 /* AT86RF212::PLL_ON */
-	else if(config.state ==  PLL_ON){
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_ON);
-		AT86RF212B_Delay(AT86RF212B_tTR8);
-		StateChangeCheck(RX_ON);
-	}
-	/* AT86RF212::BUSY_TX */
-	else if(IsStateTxBusy()){
-		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_ON);
-		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-		StateChangeCheck(RX_ON);
-	}
-	else{
-		ASSERT(0);
-		if(logging){
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
-		}
-		AT86RF212B_TRX_Reset();
-	}
-}
-
 
 static void PhyCalibrateFTN(){
 	/* AT86RF212::[CONFIG] */
@@ -897,8 +895,13 @@ static uint8_t StateChangeCheck(uint8_t newState){
 	if(config.state != newState){
 		ASSERT(0);
 		if(logging){
-			LOG(LOG_LVL_ERROR, "State Change Failed\r\n");
+			LOG(LOG_LVL_ERROR, "State Change Failed Trying Again\r\n");
 		}
+
+		if(newState == PLL_ON){
+			AT86RF212B_PhyStateChange(PLL_ON);
+		}
+
 		return 0;
 	}
 	else if(logging){
