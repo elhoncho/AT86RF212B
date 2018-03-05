@@ -134,7 +134,7 @@ void AT86RF212B_Main(){
 		case SLEEP:
 			break;
 		case RX_ON:
-			if(AT86RF212B_CheckForIRQ() == TRX_IRQ_TRX_END){
+			if(AT86RF212B_CheckForIRQ() & TRX_IRQ_TRX_END){
 				AT86RF212B_FrameRead();
 			}
 			break;
@@ -148,7 +148,7 @@ void AT86RF212B_Main(){
 		case RX_ON_NOCLK:
 			break;
 		case RX_AACK_ON:
-			if(AT86RF212B_CheckForIRQ() == TRX_IRQ_TRX_END){
+			if(AT86RF212B_CheckForIRQ() & TRX_IRQ_TRX_END){
 				//AT86RF212B_BitRead(SR_TRAC_STATUS);
 				AT86RF212B_FrameRead();
 			}
@@ -211,7 +211,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
 		AT86RF212B_Delay(AT86RF212B_t7);
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
-		PhyStateToPllOn();
+		//PhyStateToPllOn();
 	}
 	else{
 		ASSERT(0);
@@ -361,9 +361,9 @@ static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
 	//PHR
 	pTxData[1] = nLength;
 
-	//FCF
-	pTxData[2] = 0x26;
-	pTxData[3] = 0x22;
+	//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
+	pTxData[2] = 0x21;
+	pTxData[3] = 0x88;
 	//Sequence number
 	pTxData[4] = sequenceNumber;
 	//Target PAN
@@ -829,7 +829,7 @@ static uint8_t AT86RF212B_CheckForIRQ(){
 
 		if(logging){
 			char tmpStr[20];
-			sprintf(tmpStr, "IRQ Recieved: %d\r\n", irqState);
+			sprintf(tmpStr, "IRQ Recieved: 0x%2x\r\n", irqState);
 			LOG(LOG_LVL_ERROR, tmpStr);
 		}
 		return irqState;
