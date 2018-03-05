@@ -313,7 +313,7 @@ uint8_t	AT86RF212B_FrameRead(){
 		//RX_STATUS pRxData[length+2]
 		if(logging){
 
-			LOG(LOG_LVL_DEBUG, "\r\nData Received: \r\n");
+			LOG(LOG_LVL_INFO, "\r\nData Received: \r\n");
 
 			char tmpStr[20];
 			int i = 0;
@@ -324,15 +324,16 @@ uint8_t	AT86RF212B_FrameRead(){
 				else{
 					sprintf(tmpStr, "0x%02X : %c\r\n", pRxData[i], pRxData[i]);
 				}
-				LOG(LOG_LVL_DEBUG, tmpStr);
+				LOG(LOG_LVL_INFO, tmpStr);
 			}
 
-			LOG(LOG_LVL_DEBUG, "\r\n>");
+			LOG(LOG_LVL_INFO, "\r\n>");
 		}
-		//nLength-5 because data + 2 bytes from command and PHR + 3 bytes ED LQI and RX_STATUS
-		uint8_t data[nLength-5];
-		memcpy(data, &pRxData[2], nLength-5);
-		AT86RF212B_DataOutputHAL(data, nLength-5);
+		//length - AT86RF212B_DATA_OFFSET (header bytes) - 2 Frame Check Bits
+		uint8_t dataLength = length-AT86RF212B_DATA_OFFSET-2;
+		uint8_t data[dataLength];
+		memcpy(data, &pRxData[AT86RF212B_DATA_OFFSET], dataLength);
+		AT86RF212B_DataOutputHAL(data, dataLength);
 	}
 	else{
 		ASSERT(0);
@@ -347,9 +348,9 @@ static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
 	static uint8_t sequenceNumber = 0;
 	//The length here has to be the length of the data and header plus 2 for the frame check sequence if enabled
 #if AT86RF212B_TX_CRC
-	uint8_t nLength = length+13;
-#else
 	uint8_t nLength = length+9;
+#else
+	uint8_t nLength = length+7;
 #endif
 
 	uint8_t pTxData[nLength];
@@ -363,7 +364,7 @@ static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
 
 	//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
 	pTxData[2] = 0x21;
-	pTxData[3] = 0x88;
+	pTxData[3] = 0x08;
 	//Sequence number
 	pTxData[4] = sequenceNumber;
 	//Target PAN
@@ -374,13 +375,13 @@ static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
 	pTxData[8] = AT86RF212B_SHORT_ADDR_TARGET_15_8;
 
 	//Source PAN
-	pTxData[9] = AT86RF212B_PAN_ID_7_0;
-	pTxData[10] = AT86RF212B_PAN_ID_15_8;
-	//Target ID
-	pTxData[11] = AT86RF212B_SHORT_ADDR_7_0;
-	pTxData[12] = AT86RF212B_SHORT_ADDR_15_8;
+	//pTxData[9] = AT86RF212B_PAN_ID_7_0;
+	//pTxData[10] = AT86RF212B_PAN_ID_15_8;
+	//Source ID
+	//pTxData[11] = AT86RF212B_SHORT_ADDR_7_0;
+	//pTxData[12] = AT86RF212B_SHORT_ADDR_15_8;
 
-	memcpy(&pTxData[13], frame, length);
+	memcpy(&pTxData[AT86RF212B_DATA_OFFSET], frame, length);
 
 	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 
