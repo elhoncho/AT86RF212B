@@ -11,8 +11,8 @@
 #include "AT86RF212B.h"
 
 //Hardware back end, ONLY ONE SHOUDL BE TRUE
-#define STM32 0
-#define RASPBERRY_PI 1
+#define STM32 1
+#define RASPBERRY_PI 0
 
 //Settings
 
