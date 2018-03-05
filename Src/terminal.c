@@ -274,7 +274,7 @@ void TerminalRead(){
 }
 
 void TerminalWrite(uint8_t *txStr){
-	InterfaceWriteToLogHAL(txStr, strlen(txStr));
+	InterfaceWriteToLogHAL(txStr, strlen((char*)txStr));
 }
 
 void TerminalMain(){
