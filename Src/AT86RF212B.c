@@ -829,7 +829,7 @@ static uint8_t AT86RF212B_CheckForIRQ(){
 
 		if(logging){
 			char tmpStr[20];
-			sprintf(tmpStr, "IRQ Recieved: 0x%2x\r\n", irqState);
+			sprintf(tmpStr, "IRQ Received: 0x%02x\r\n", irqState);
 			LOG(LOG_LVL_ERROR, tmpStr);
 		}
 		return irqState;
