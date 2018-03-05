@@ -16,6 +16,8 @@
 
 //Settings
 
+#define AT86RF212B_MAX_DATA 118
+
 //Change this to set the RF mode
 #define AT86RF212B_PHY_MODE 		AT86RF212B_O_QPSK_100;
 //scrambler configuration for O-QPSK_{400,1000}; values { 0: disabled, 1: enabled (default)}.
@@ -28,7 +30,7 @@
 //rxSensLvl = 0 - 15, 0 = max sensitivity
 #define AT86RF212B_RX_SENSE_LVL		0
 //Enable TX CRC generation 1 = on 0 = off
-#define AT86RF212B_TX_CRC 			0
+#define AT86RF212B_TX_CRC 			1
 //Sets the number of attempts to retransmit a frame when it was not acknowledged by the recipient (0x00 - 0x07)
 #define AT86RF212B_MAX_FRAME_RETRIES 0X03
 //Switches between CSMA-CA Listen Before Talk algorithm within TX_ARET mode (0 [CSMA-CA] or 1 [LBT])
@@ -46,10 +48,27 @@
 //0 = no pending data 0 ; 1 = pending data
 #define AT86RF212B_AACK_SET_PD		0x00
 //Address Filtering
-#define AT86RF212B_PAN_ID_7_0 		0xDE
-#define AT86RF212B_PAN_ID_15_8 		0xAD
-#define AT86RF212B_SHORT_ADDR_7_0	0xBE
-#define AT86RF212B_SHORT_ADDR_15_8 	0xEF
+#define AT86RF212B_PAN_ID_7_0 		0xCC
+#define AT86RF212B_PAN_ID_15_8 		0xCC
+
+#if STM32
+#define AT86RF212B_SHORT_ADDR_7_0	0xAA
+#define AT86RF212B_SHORT_ADDR_15_8 	0xAA
+#endif
+#if RASPBERRY_PI
+#define AT86RF212B_SHORT_ADDR_7_0	0xBB
+#define AT86RF212B_SHORT_ADDR_15_8 	0xBB
+#endif
+
+#if STM32
+#define AT86RF212B_SHORT_ADDR_TARGET_7_0	0xBB
+#define AT86RF212B_SHORT_ADDR_TARGET_15_8 	0xBB
+#endif
+#if RASPBERRY_PI
+#define AT86RF212B_SHORT_ADDR_TARGET_7_0	0xAA
+#define AT86RF212B_SHORT_ADDR_TARGET_15_8 	0xAA
+#endif
+
 #define AT86RF212B_EXT_ADDR_7_0		0x00
 #define AT86RF212B_EXT_ADDR_15_8 	0x00
 #define AT86RF212B_EXT_ADDR_23_16	0x00

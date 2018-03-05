@@ -86,7 +86,7 @@ uint8_t InterfacePushToInputBufferHAL(char rxChar){
 			newCmd = 1;
 		}
 		if(rxBuffer.head > rxBuffer.tail){
-			if(rxBuffer.head - rxBuffer.tail <= 127){
+			if(rxBuffer.head - rxBuffer.tail <= AT86RF212B_MAX_DATA){
 				//Buffer is fine
 				return 1;
 			}
@@ -97,7 +97,7 @@ uint8_t InterfacePushToInputBufferHAL(char rxChar){
 		}
 		//Buffer wrapped around
 		else{
-			if(((BUFFER_LENGTH - rxBuffer.tail)+rxBuffer.head) <= 127){
+			if(((BUFFER_LENGTH - rxBuffer.tail)+rxBuffer.head) <= AT86RF212B_MAX_DATA){
 				return 1;
 			}
 			else{

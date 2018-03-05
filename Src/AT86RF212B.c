@@ -40,6 +40,8 @@ static uint8_t 	IsStateCmd();
 static uint8_t 	AT86RF212B_CheckForIRQ();
 static void 	AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length);
 static void 	AT86RF212B_Delay(uint8_t time);
+static void 	PhyStateToTxARET_On();
+static void 	PhyStateToRxAACK_On();
 
 /*
 static void 	AT86RF212B_AES_Io (uint8_t mode, uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata);
@@ -196,7 +198,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 	}
 
 	if(config.state == TX_ARET_ON){
-		if(length > 127){
+		if(length > AT86RF212B_MAX_DATA){
 			ASSERT(0);
 			if(logging){
 				LOG(LOG_LVL_ERROR, "Frame Too Large");
@@ -205,10 +207,6 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 		}
 		//TODO: The speed of transmission can be improved by not waiting for all the data to be written before starting the TX phase
 		AT86RF212B_FrameWrite(frame, length);
-
-		//AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
-		//AT86RF212B_Delay(AT86RF212B_t7);
-		//AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
 
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
 		AT86RF212B_Delay(AT86RF212B_t7);
@@ -335,17 +333,34 @@ uint8_t	AT86RF212B_FrameRead(){
 }
 
 static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
+	static uint8_t sequenceNumber = 0;
+	//The length here has to be the length of the data plus 2 for the frame check sequence if enabled
+#if AT86RF212B_TX_CRC
 	uint8_t nLength = length+2;
+#else
+	uint8_t nLength = length;
+#endif
+
 	uint8_t pTxData[nLength];
 	uint8_t pRxData[nLength];
 
 	pTxData[0] = 0x60;
-	//So strange but the length here has to be the length of the data plus 2 for the command and PHR bytes
-	//If this is not length+2 then the last two characters will get cut off
 	pTxData[1] = nLength;
-	memcpy(&pTxData[2], frame, length);
+	pTxData[2] = 0x26;
+	pTxData[3] = 0x20;
+	//Sequence number
+	pTxData[4] = sequenceNumber;
+	//Target PAN
+	pTxData[5] = AT86RF212B_PAN_ID_7_0;
+	pTxData[6] = AT86RF212B_PAN_ID_15_8;
+	//Target ID
+	pTxData[7] = AT86RF212B_SHORT_ADDR_TARGET_7_0;
+	pTxData[8] = AT86RF212B_SHORT_ADDR_TARGET_15_8;
+	memcpy(&pTxData[9], frame, length);
 
 	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+
+	sequenceNumber += 1;
 }
 
 static void 	AT86RF212B_IrqInit (){
@@ -498,7 +513,7 @@ void PhyStateToPllOn(){
 	}
 }
 
-void PhyStateToRxAACK_On(){
+static void PhyStateToRxAACK_On(){
 	UpdateState();
 	//TODO:Remove this condition, was used for a terminal test
 	if(config.state == RX_AACK_ON){
@@ -531,7 +546,7 @@ void PhyStateToRxAACK_On(){
 	}
 }
 
-void PhyStateToTxARET_On(){
+static void PhyStateToTxARET_On(){
 	UpdateState();
 	//TODO:Remove this condition, was used for a terminal test
 	if(config.state == TX_ARET_ON){
