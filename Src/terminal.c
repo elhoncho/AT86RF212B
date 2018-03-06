@@ -108,7 +108,7 @@ static void RawMode(char *arg1, char *arg2){
 }
 
 static void ReadFrame(char *arg1, char *arg2){
-	AT86RF212B_FrameRead();
+	AT86RF212B_FrameRead(0);
 }
 
 static void WriteFrame(char *arg1, char *arg2){

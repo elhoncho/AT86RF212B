@@ -38,12 +38,14 @@ static uint8_t 	IsStateTxBusy();
 static uint8_t 	IsStateRxBusy();
 static uint8_t 	IsStateBusy();
 //static uint8_t 	IsStateCmd();
-static uint8_t 	AT86RF212B_CheckForIRQ();
+static uint8_t 	AT86RF212B_CheckForIRQ(uint8_t desiredIRQ);
 static void 	AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length);
 static void 	AT86RF212B_Delay(uint8_t time);
 static void 	AT86RF212B_PhyStateChange(uint8_t newState);
 static void 	AT86RF212B_WrongStateError();
 static void 	AT86RF212B_PowerOnSequence();
+static void 	AT86RF212B_SendBeacon();
+
 
 /*
 static void 	AT86RF212B_AES_Io (uint8_t mode, uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata);
@@ -62,6 +64,8 @@ extern uint8_t logging;
 //------------Private Global Variables----------------//
 static AT86RF212B_Config config;
 static volatile uint8_t interupt = 0;
+static uint8_t waitForEndOfRx = 0;
+static uint32_t nextBeaconUpdate = 0;
 
 //==============================================================================================//
 //                                       Public Functions                                       //
@@ -143,34 +147,53 @@ void AT86RF212B_Main(){
 		case SLEEP:
 			break;
 		case RX_ON:
-			if(AT86RF212B_CheckForIRQ() & TRX_IRQ_TRX_END){
+			if(AT86RF212B_CheckForIRQ(TRX_IRQ_AMI)){
 				AT86RF212B_FrameRead();
 			}
 			break;
 		case PLL_ON:
 			AT86RF212B_PhyStateChange(RX_AACK_ON);
 			break;
+		case TX_ARET_ON:
+			//Send Beacon
+			if(AT86RF212B_SysTickMsHAL() > nextBeaconUpdate){
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "Sending Beacon\r\n");
+				}
+				AT86RF212B_SendBeacon();
+				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + 1000;
+			}
+			break;
+		case BUSY_RX_AACK:
+			break;
+		case RX_AACK_ON:
+			//Check for Beacon
+			if(AT86RF212B_SysTickMsHAL() > nextBeaconUpdate){
+				ASSERT(0);
+				if(logging){
+					LOG(LOG_LVL_ERROR, "Beacon Failed!\r\n");
+				}
+				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + 2000;
+			}
+			if(AT86RF212B_CheckForIRQ(TRX_IRQ_AMI)){
+				//AT86RF212B_BitRead(SR_TRAC_STATUS);
+				AT86RF212B_FrameRead();
+			}
+			break;
 		case BUSY_TX:
 			break;
 		case BUSY_TX_ARET:
-			if(logging){
-				AT86RF212B_CheckForIRQ();
-			}
-			break;
-		case TX_ARET_ON:
-			if(logging){
-				AT86RF212B_CheckForIRQ();
-			}
 			break;
 		case BUSY_RX:
 			break;
 		case RX_ON_NOCLK:
 			break;
-		case RX_AACK_ON:
-			if(AT86RF212B_CheckForIRQ() & TRX_IRQ_TRX_END){
-				//AT86RF212B_BitRead(SR_TRAC_STATUS);
-				AT86RF212B_FrameRead();
+		default:
+			ASSERT(0);
+			if(logging){
+				LOG(LOG_LVL_ERROR, "Unknown state, changing to RX_AACK_ON\r\n");
 			}
+			AT86RF212B_PhyStateChange(RX_AACK_ON);
 			break;
 	}
 }
@@ -202,7 +225,34 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 
 	return pRxData[1];
 }
+static void AT86RF212B_SendBeacon(){
+	//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
+	#if AT86RF212B_TX_CRC
+		uint8_t nLength = 11;
+	#else
+		uint8_t nLength = 9;
+	#endif
 
+	uint8_t pRxData[nLength];
+
+	//Frame write command
+	uint8_t pTxData[9] = {0x60,
+	//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
+	nLength,
+	//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
+	0x00,
+	0x08,
+	//Sequence number
+	0x00,
+	//Target PAN
+	AT86RF212B_PAN_ID_7_0,
+	AT86RF212B_PAN_ID_15_8,
+	//Target ID
+	AT86RF212B_SHORT_ADDR_TARGET_7_0,
+	AT86RF212B_SHORT_ADDR_TARGET_15_8};
+
+	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+}
 //Length is the lengt of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 	uint8_t status;
@@ -215,7 +265,14 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 		if(length > AT86RF212B_MAX_DATA){
 			ASSERT(0);
 			if(logging){
-				LOG(LOG_LVL_ERROR, "Frame Too Large");
+				LOG(LOG_LVL_ERROR, "Frame Too Large\r\n");
+			}
+			return;
+		}
+		else if(length == 0){
+			ASSERT(0);
+			if(logging){
+				LOG(LOG_LVL_ERROR, "No data to send\r\n");
 			}
 			return;
 		}
@@ -312,6 +369,10 @@ static uint8_t 	AT86RF212B_FrameLengthRead(){
 }
 
 void AT86RF212B_FrameRead(){
+	if(waitForEndOfRx){
+		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+	}
+
 	if(config.txCrc){
 		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
 			if(logging){
@@ -334,6 +395,8 @@ void AT86RF212B_FrameRead(){
 		if(logging){
 			LOG(LOG_LVL_ERROR, "No data on frame\r\n");
 		}
+		//Enable preamble detector to start receiving again
+		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 		return;
 	}
 	else if(length > 127){
@@ -341,6 +404,8 @@ void AT86RF212B_FrameRead(){
 		if(logging){
 			LOG(LOG_LVL_ERROR, "Frame too large\r\n");
 		}
+		//Enable preamble detector to start receiving again
+		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 		return;
 	}
 	else{
@@ -364,24 +429,26 @@ void AT86RF212B_FrameRead(){
 		//Energy Detection (ED) pRxData[length]
 		//Link Quality Indication (LQI) pRxData[length+1]
 		//RX_STATUS pRxData[length+2]
-		if(logging){
 
-			LOG(LOG_LVL_INFO, "\r\nData Received: \r\n");
+//		if(logging){
+//
+//			LOG(LOG_LVL_INFO, "\r\nData Received: \r\n");
+//
+//			char tmpStr[20];
+//			int i = 0;
+//			for(i = 0; i < nLength; i++){
+//				if(pRxData[i] < 32 || pRxData[i] > 126){
+//					sprintf(tmpStr, "0x%02X : \r\n", pRxData[i]);
+//				}
+//				else{
+//					sprintf(tmpStr, "0x%02X : %c\r\n", pRxData[i], pRxData[i]);
+//				}
+//				LOG(LOG_LVL_INFO, tmpStr);
+//			}
+//
+//			LOG(LOG_LVL_INFO, "\r\n>");
+//		}
 
-			char tmpStr[20];
-			int i = 0;
-			for(i = 0; i < nLength; i++){
-				if(pRxData[i] < 32 || pRxData[i] > 126){
-					sprintf(tmpStr, "0x%02X : \r\n", pRxData[i]);
-				}
-				else{
-					sprintf(tmpStr, "0x%02X : %c\r\n", pRxData[i], pRxData[i]);
-				}
-				LOG(LOG_LVL_INFO, tmpStr);
-			}
-
-			LOG(LOG_LVL_INFO, "\r\n>");
-		}
 		//length - AT86RF212B_DATA_OFFSET (header bytes)
 		uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
 		uint8_t data[dataLength];
@@ -867,23 +934,43 @@ void AT86RF212B_TestSleep(){
 	AT86RF212B_WaitForIRQ(TRX_IRQ_AWAKE_END);
 }
 
-static uint8_t AT86RF212B_CheckForIRQ(){
+static uint8_t AT86RF212B_CheckForIRQ(uint8_t desiredIRQ){
 	if(interupt){
+
 		//Clear the interrupt flag
 		interupt = 0;
 
 		uint8_t irqState = AT86RF212B_RegRead(RG_IRQ_STATUS);
 
-		if(irqState & 4){
-			//Disable preamble detector to prevent receiving another frame before the current one is read
-			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
+		if(desiredIRQ & irqState){
+			if(logging){
+				char tmpStr[40];
+				sprintf(tmpStr, "IRQ checking for Received: 0x%02x\r\n", irqState);
+				LOG(LOG_LVL_INFO, tmpStr);
+			}
+
+			if((irqState & desiredIRQ) == TRX_IRQ_AMI){
+				if(irqState & TRX_IRQ_TRX_END){
+					waitForEndOfRx = 0;
+				}
+				else{
+					waitForEndOfRx = 1;
+				}
+				//Disable preamble detector to prevent receiving another frame before the current one is read
+				AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
+			}
+
+
+
+			return 1;
 		}
+		//Not the IRQ being checked for but an IRQ was received
 		if(logging){
 			char tmpStr[20];
 			sprintf(tmpStr, "IRQ Received: 0x%02x\r\n", irqState);
 			LOG(LOG_LVL_ERROR, tmpStr);
 		}
-		return irqState;
+
 	}
 	return 0;
 }
@@ -919,7 +1006,7 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 		AT86RF212B_WaitForIRQ(expectedIRQ);
 	}
 	else if(logging){
-		LOG(LOG_LVL_DEBUG, "Expected IRQ Received!\r\n");
+		LOG(LOG_LVL_DEBUG, "IRQ waiting for received!\r\n");
 	}
 }
 
