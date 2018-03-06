@@ -317,21 +317,28 @@ void AT86RF212B_FrameRead(){
 			if(logging){
 				LOG(LOG_LVL_INFO, "CRC Failed\r\n");
 			}
-			//TODO: This is not good, for some reason the automatic write protection is being enabled for a failed CRC
-			//so reading from the frame buffer to clear it
-			uint8_t length = AT86RF212B_FrameLengthRead();
-			uint8_t nLength = length+3;
-			uint8_t pTxData[nLength];
-			uint8_t pRxData[nLength];
-
-			pTxData[0] = 0x20;
-
-			AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+			//Enable preamble detector to start receiving again
+			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 			return;
 		}
 	}
+
 	uint8_t length = AT86RF212B_FrameLengthRead();
-	if(length <= 127){
+	if(length == 0){
+		ASSERT(0);
+		if(logging){
+			LOG(LOG_LVL_ERROR, "No data on frame\r\n");
+		}
+		return;
+	}
+	else if(length > 127){
+		ASSERT(0);
+		if(logging){
+			LOG(LOG_LVL_ERROR, "Frame too large\r\n");
+		}
+		return;
+	}
+	else{
 		//Length received is the length of the data plus two bytes for the command and PRI bytes
 		//add 3 to the length for the ED LQI and RX_STATUS bytes
 		uint8_t nLength = length+3;
@@ -341,6 +348,8 @@ void AT86RF212B_FrameRead(){
 		pTxData[0] = 0x20;
 
 		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+		//Enable preamble detector to start receiving again
+		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 
 		//Energy Detection (ED) pRxData[length]
 		//Link Quality Indication (LQI) pRxData[length+1]
@@ -369,14 +378,7 @@ void AT86RF212B_FrameRead(){
 		memcpy(data, &pRxData[AT86RF212B_DATA_OFFSET], dataLength);
 		InterfaceWriteToDataOutputHAL(data, dataLength);
 	}
-	else{
-		ASSERT(0);
-		if(logging){
-			LOG(LOG_LVL_ERROR, "Frame too large\r\n");
-		}
-	}
 	return;
-
 }
 
 static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
@@ -862,6 +864,10 @@ static uint8_t AT86RF212B_CheckForIRQ(){
 
 		uint8_t irqState = AT86RF212B_RegRead(RG_IRQ_STATUS);
 
+		if(irqState & 4){
+			//Disable preamble detector to prevent receiving another frame before the current one is read
+			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+		}
 		if(logging){
 			char tmpStr[20];
 			sprintf(tmpStr, "IRQ Received: 0x%02x\r\n", irqState);
