@@ -352,7 +352,7 @@ void AT86RF212B_FrameRead(){
 			char tmpStr[20];
 			int i = 0;
 			for(i = 0; i < nLength; i++){
-				if(pRxData[i] == 0){
+				if(pRxData[i] < 32 || pRxData[i] > 126){
 					sprintf(tmpStr, "0x%02X : \r\n", pRxData[i]);
 				}
 				else{
