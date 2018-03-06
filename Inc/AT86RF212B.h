@@ -40,6 +40,9 @@ typedef struct{
 	//Enable crc
 	uint8_t txCrc;
 
+	//Enable Rx Safe Mode
+	uint8_t rxSafeMode;
+
 	//Address Filter
 	uint8_t panId_7_0;
 	uint8_t panId_15_8;

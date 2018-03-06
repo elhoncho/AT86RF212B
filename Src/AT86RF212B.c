@@ -84,6 +84,8 @@ void AT86RF212B_Open(){
 	config.rxSensLvl = AT86RF212B_RX_SENSE_LVL;
 	//Enable TX CRC generation 1 = on 0 = off
 	config.txCrc = AT86RF212B_TX_CRC;
+	//Enables Rx Safe Mode
+	config.rxSafeMode = AT86RF212B_RX_SAFE_MODE;
 	//Address Filtering
 	config.panId_7_0 = AT86RF212B_PAN_ID_7_0;
 	config.panId_15_8 = AT86RF212B_PAN_ID_15_8;
@@ -203,11 +205,7 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 
 //Length is the lengt of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
-/*
-	if(config.state != PLL_ON){
-		PhyStateToPllOn();
-	}
-	*/
+	uint8_t status;
 	UpdateState();
 	if(config.state != TX_ARET_ON){
 		AT86RF212B_PhyStateChange(TX_ARET_ON);
@@ -230,6 +228,18 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 		//Wait untill done transmitting data
 		//TODO: This may affect speed
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+		status = AT86RF212B_BitRead(SR_TRAC_STATUS);
+		if(status == TRAC_SUCCESS){
+			if(logging){
+				LOG(LOG_LVL_INFO, "Frame TX Success\r\n");
+			}
+		}
+		else if(status != TRAC_SUCCESS){
+			if(logging){
+				LOG(LOG_LVL_DEBUG, "No ACK on frame, retransmitting\r\n");
+			}
+			AT86RF212B_TxData(frame, length);
+		}
 	}
 	else{
 		ASSERT(0);
@@ -263,16 +273,10 @@ static void AT86RF212B_BitWrite(uint8_t reg, uint8_t mask, uint8_t pos, uint8_t 
 }
 
 uint8_t AT86RF212B_BitRead (uint8_t addr, uint8_t mask, uint8_t pos){
-	uint8_t bitMask = 1 << pos;
-
 	uint8_t currentValue = AT86RF212B_RegRead(addr);
-
-	if(currentValue & bitMask){
-		return 1;
-	}
-	else{
-		return 0;
-	}
+	currentValue = currentValue & mask;
+	currentValue = currentValue >> pos;
+	return currentValue;
 }
 
 /*
@@ -308,9 +312,6 @@ static uint8_t 	AT86RF212B_FrameLengthRead(){
 }
 
 uint8_t	AT86RF212B_FrameRead(){
-	//Change to PLL on to prevent data from being overwritten by a new RX packet
-	AT86RF212B_PhyStateChange(PLL_ON);
-
 	if(config.txCrc){
 		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
 			//If CRC enabled and CRC is not valid
@@ -810,6 +811,7 @@ static void AT86RF212B_SetPhyMode(){
 		AT86RF212B_BitWrite(SR_SLOTTED_OPERATION, config.slottedOperatin);
 		AT86RF212B_BitWrite(SR_AACK_I_AM_COORD, config.AACK_I_AmCoord);
 		AT86RF212B_BitWrite(SR_AACK_SET_PD, config.AACK_SetPd);
+		AT86RF212B_BitWrite(SR_RX_SAFE_MODE, config.rxSafeMode);
 		AT86RF212B_RegWrite(RG_PAN_ID_0, config.panId_7_0);
 		AT86RF212B_RegWrite(RG_PAN_ID_1, config.panId_15_8);
 		AT86RF212B_RegWrite(RG_SHORT_ADDR_0, config.shortAddr_7_0);
