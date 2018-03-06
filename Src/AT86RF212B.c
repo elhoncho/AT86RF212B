@@ -319,7 +319,14 @@ void AT86RF212B_FrameRead(){
 			}
 			//TODO: This is not good, for some reason the automatic write protection is being enabled for a failed CRC
 			//so reading from the frame buffer to clear it
-			AT86RF212B_FrameLengthRead();
+			uint8_t length = AT86RF212B_FrameLengthRead();
+			uint8_t nLength = length+3;
+			uint8_t pTxData[nLength];
+			uint8_t pRxData[nLength];
+
+			pTxData[0] = 0x20;
+
+			AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 			return;
 		}
 	}
@@ -334,8 +341,6 @@ void AT86RF212B_FrameRead(){
 		pTxData[0] = 0x20;
 
 		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
-		//Change back to RxAACK to recieve next frame
-		AT86RF212B_PhyStateChange(RX_AACK_ON);
 
 		//Energy Detection (ED) pRxData[length]
 		//Link Quality Indication (LQI) pRxData[length+1]
