@@ -317,6 +317,9 @@ void AT86RF212B_FrameRead(){
 			if(logging){
 				LOG(LOG_LVL_INFO, "CRC Failed\r\n");
 			}
+			//TODO: This is not good, for some reason the automatic write protection is being enabled for a failed CRC
+			//so reading from the frame buffer to clear it
+			AT86RF212B_FrameLengthRead();
 			return;
 		}
 	}
