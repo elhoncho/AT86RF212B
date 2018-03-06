@@ -464,7 +464,7 @@ void AT86RF212B_FrameRead(){
 //		}
 
 		//Check if it is a data frame
-		if((pRxData[0] & 0x07) == 1){
+		if((pRxData[2] & 0x07) == 1){
 			//length - AT86RF212B_DATA_OFFSET (header bytes)
 			uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
 			uint8_t data[dataLength];
@@ -472,7 +472,7 @@ void AT86RF212B_FrameRead(){
 			InterfaceWriteToDataOutputHAL(data, dataLength);
 		}
 		//Check if it is a beacon frame
-		else if((pRxData[0] & 0x07) == 4){
+		else if((pRxData[2] & 0x07) == 4){
 			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL;
 		}
 		else{
