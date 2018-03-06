@@ -145,5 +145,5 @@ void PhyStateToRxOn();
 //TODO: Remove this it should be static
 void PhyStateToPllOn();
 //TODO: Remove this it should be static
-uint8_t	AT86RF212B_FrameRead();
+void AT86RF212B_FrameRead();
 #endif /* MYINC_AT86RF212B_H_ */

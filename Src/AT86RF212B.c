@@ -234,7 +234,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 				LOG(LOG_LVL_INFO, "Frame TX Success\r\n");
 			}
 		}
-		else if(status != TRAC_SUCCESS){
+		else if(status == TRAC_NO_ACK){
 			if(logging){
 				LOG(LOG_LVL_DEBUG, "No ACK on frame, retransmitting\r\n");
 			}
@@ -311,16 +311,15 @@ static uint8_t 	AT86RF212B_FrameLengthRead(){
 	return pRxData[1];
 }
 
-uint8_t	AT86RF212B_FrameRead(){
+void AT86RF212B_FrameRead(){
 	if(config.txCrc){
 		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
 			if(logging){
 				LOG(LOG_LVL_INFO, "CRC Failed\r\n");
 			}
-			return 0;
+			return;
 		}
 	}
-
 	uint8_t length = AT86RF212B_FrameLengthRead();
 	if(length <= 127){
 		//Length received is the length of the data plus two bytes for the command and PRI bytes
@@ -368,7 +367,8 @@ uint8_t	AT86RF212B_FrameRead(){
 			LOG(LOG_LVL_ERROR, "Frame too large\r\n");
 		}
 	}
-	return AT86RF212B_FrameLengthRead();
+	return;
+
 }
 
 static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
