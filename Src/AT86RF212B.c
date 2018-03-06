@@ -314,8 +314,9 @@ static uint8_t 	AT86RF212B_FrameLengthRead(){
 uint8_t	AT86RF212B_FrameRead(){
 	if(config.txCrc){
 		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
-			//If CRC enabled and CRC is not valid
-			AT86RF212B_PhyStateChange(RX_AACK_ON);
+			if(logging){
+				LOG(LOG_LVL_INFO, "CRC Failed\r\n");
+			}
 			return 0;
 		}
 	}
