@@ -473,7 +473,8 @@ void AT86RF212B_FrameRead(){
 		}
 		//Check if it is a beacon frame
 		else if((pRxData[2] & 0x07) == 4){
-			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL;
+			//Wait twice as long as beacons are being sent out
+			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 		}
 		else{
 			if(logging){
@@ -1035,7 +1036,7 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 		AT86RF212B_WaitForIRQ(expectedIRQ);
 	}
 	else if(logging){
-		LOG(LOG_LVL_DEBUG, "IRQ waiting for received!\r\n");
+		LOG(LOG_LVL_DEBUG, "Expected IRQ received, exiting loop!\r\n");
 	}
 }
 
