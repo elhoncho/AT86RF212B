@@ -90,6 +90,7 @@ void AT86RF212B_Open(){
 	config.txCrc = AT86RF212B_TX_CRC;
 	//Enables Rx Safe Mode
 	config.rxSafeMode = AT86RF212B_RX_SAFE_MODE;
+	config.AACK_UPLD_RES_FT = AT86RF212B_AACK_UPLD_RES_FT;
 	//Address Filtering
 	config.panId_7_0 = AT86RF212B_PAN_ID_7_0;
 	config.panId_15_8 = AT86RF212B_PAN_ID_15_8;
@@ -226,32 +227,46 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 	return pRxData[1];
 }
 static void AT86RF212B_SendBeacon(){
-	//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
-	#if AT86RF212B_TX_CRC
-		uint8_t nLength = 11;
-	#else
-		uint8_t nLength = 9;
-	#endif
+	UpdateState();
+		if(config.state != TX_ARET_ON){
+			AT86RF212B_PhyStateChange(TX_ARET_ON);
+			AT86RF212B_SendBeacon();
+		}
+		else if(config.state == TX_ARET_ON){
+			//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
+			#if AT86RF212B_TX_CRC
+				uint8_t nLength = 13;
+			#else
+				uint8_t nLength = 11;
+			#endif
 
-	uint8_t pRxData[nLength];
+			uint8_t pRxData[nLength];
 
-	//Frame write command
-	uint8_t pTxData[9] = {0x60,
-	//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
-	nLength,
-	//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
-	0x00,
-	0x08,
-	//Sequence number
-	0x00,
-	//Target PAN
-	AT86RF212B_PAN_ID_7_0,
-	AT86RF212B_PAN_ID_15_8,
-	//Target ID
-	AT86RF212B_SHORT_ADDR_TARGET_7_0,
-	AT86RF212B_SHORT_ADDR_TARGET_15_8};
+			//Frame write command
+			uint8_t pTxData[11] = {0x60,
+			//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
+			nLength-2,
+			//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
+			0x01,
+			0x08,
+			//Sequence number
+			0x00,
+			//Target PAN
+			AT86RF212B_PAN_ID_7_0,
+			AT86RF212B_PAN_ID_15_8,
+			//Target ID
+			AT86RF212B_SHORT_ADDR_TARGET_7_0,
+			AT86RF212B_SHORT_ADDR_TARGET_15_8,
+			'A',
+			'A'};
 
-	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+			AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+
+			AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
+			AT86RF212B_Delay(AT86RF212B_t7);
+			AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
+			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+		}
 }
 //Length is the lengt of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
@@ -899,6 +914,7 @@ static void AT86RF212B_SetPhyMode(){
 		AT86RF212B_BitWrite(SR_SLOTTED_OPERATION, config.slottedOperatin);
 		AT86RF212B_BitWrite(SR_AACK_I_AM_COORD, config.AACK_I_AmCoord);
 		AT86RF212B_BitWrite(SR_AACK_SET_PD, config.AACK_SetPd);
+		AT86RF212B_BitWrite(SR_AACK_UPLD_RES_FT, config.AACK_UPLD_RES_FT);
 		AT86RF212B_BitWrite(SR_RX_SAFE_MODE, config.rxSafeMode);
 		AT86RF212B_RegWrite(RG_PAN_ID_0, config.panId_7_0);
 		AT86RF212B_RegWrite(RG_PAN_ID_1, config.panId_15_8);

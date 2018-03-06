@@ -11,8 +11,8 @@
 #include "AT86RF212B.h"
 
 //Hardware back end, ONLY ONE SHOUDL BE TRUE
-#define STM32 0
-#define RASPBERRY_PI 1
+#define STM32 1
+#define RASPBERRY_PI 0
 
 //Settings
 
@@ -48,6 +48,7 @@
 #define AT86RF212B_AACK_I_AM_COORD 	0x00
 // 0 = off 1 = on, Prevents overwriting received data with new received data before having read the current data
 #define AT86RF212B_RX_SAFE_MODE		0x00
+#define AT86RF212B_AACK_UPLD_RES_FT	0x01
 //0 = no pending data 0 ; 1 = pending data
 #define AT86RF212B_AACK_SET_PD		0x00
 //Address Filtering

@@ -43,6 +43,9 @@ typedef struct{
 	//Enable Rx Safe Mode
 	uint8_t rxSafeMode;
 
+	//Enables reserved frame types to be processed
+	uint8_t AACK_UPLD_RES_FT;
+
 	//Address Filter
 	uint8_t panId_7_0;
 	uint8_t panId_15_8;
