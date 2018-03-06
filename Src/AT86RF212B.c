@@ -318,7 +318,7 @@ void AT86RF212B_FrameRead(){
 				LOG(LOG_LVL_DEBUG, "CRC Failed\r\n");
 			}
 			//Enable preamble detector to start receiving again
-			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
+			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 			return;
 		}
 		else{
@@ -359,7 +359,7 @@ void AT86RF212B_FrameRead(){
 
 		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 		//Enable preamble detector to start receiving again
-		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
+		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 
 		//Energy Detection (ED) pRxData[length]
 		//Link Quality Indication (LQI) pRxData[length+1]
@@ -876,7 +876,7 @@ static uint8_t AT86RF212B_CheckForIRQ(){
 
 		if(irqState & 4){
 			//Disable preamble detector to prevent receiving another frame before the current one is read
-			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 		}
 		if(logging){
 			char tmpStr[20];
