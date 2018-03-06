@@ -10,8 +10,7 @@
 #include "interfaceHAL.h"
 #include <string.h>
 
-#define MSKMODE_SHOW_INT
-#define MSKMODE_DONT_SHOW_INT
+#define BEACON_TX_INTERVAL 1000
 
 //------------Private Function Prototypes----------------//
 //TODO:These should be uncommented as they are static
@@ -162,7 +161,7 @@ void AT86RF212B_Main(){
 					LOG(LOG_LVL_DEBUG, "Sending Beacon\r\n");
 				}
 				AT86RF212B_SendBeacon();
-				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + 1000;
+				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + BEACON_TX_INTERVAL;
 			}
 			break;
 		case BUSY_RX_AACK:
@@ -170,9 +169,8 @@ void AT86RF212B_Main(){
 		case RX_AACK_ON:
 			//Check for Beacon
 			if(AT86RF212B_SysTickMsHAL() > nextBeaconUpdate){
-				ASSERT(0);
 				if(logging){
-					LOG(LOG_LVL_ERROR, "Beacon Failed!\r\n");
+					LOG(LOG_LVL_DEBUG, "Beacon Failed\r\n");
 				}
 				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + 2000;
 			}
@@ -464,11 +462,24 @@ void AT86RF212B_FrameRead(){
 //			LOG(LOG_LVL_INFO, "\r\n>");
 //		}
 
-		//length - AT86RF212B_DATA_OFFSET (header bytes)
-		uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
-		uint8_t data[dataLength];
-		memcpy(data, &pRxData[AT86RF212B_DATA_OFFSET], dataLength);
-		InterfaceWriteToDataOutputHAL(data, dataLength);
+		//Check if it is a data frame
+		if((pRxData[0] & 0x07) == 1){
+			//length - AT86RF212B_DATA_OFFSET (header bytes)
+			uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
+			uint8_t data[dataLength];
+			memcpy(data, &pRxData[AT86RF212B_DATA_OFFSET], dataLength);
+			InterfaceWriteToDataOutputHAL(data, dataLength);
+		}
+		//Check if it is a beacon frame
+		else if((pRxData[0] & 0x07) == 0){
+			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL;
+		}
+		else{
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, "Unknown Frame Type\r\n");
+			}
+		}
 	}
 	return;
 }
