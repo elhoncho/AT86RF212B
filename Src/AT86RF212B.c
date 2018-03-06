@@ -90,6 +90,7 @@ void AT86RF212B_Open(){
 	//Enables Rx Safe Mode
 	config.rxSafeMode = AT86RF212B_RX_SAFE_MODE;
 	config.AACK_UPLD_RES_FT = AT86RF212B_AACK_UPLD_RES_FT;
+	config.AACK_FLTR_RES_FT = AT86RF212B_AACK_FLTR_RES_FT;
 	//Address Filtering
 	config.panId_7_0 = AT86RF212B_PAN_ID_7_0;
 	config.panId_15_8 = AT86RF212B_PAN_ID_15_8;
@@ -926,6 +927,7 @@ static void AT86RF212B_SetPhyMode(){
 		AT86RF212B_BitWrite(SR_AACK_I_AM_COORD, config.AACK_I_AmCoord);
 		AT86RF212B_BitWrite(SR_AACK_SET_PD, config.AACK_SetPd);
 		AT86RF212B_BitWrite(SR_AACK_UPLD_RES_FT, config.AACK_UPLD_RES_FT);
+		AT86RF212B_BitWrite(SR_AACK_FLTR_RES_FT, config.AACK_FLTR_RES_FT);
 		AT86RF212B_BitWrite(SR_RX_SAFE_MODE, config.rxSafeMode);
 		AT86RF212B_RegWrite(RG_PAN_ID_0, config.panId_7_0);
 		AT86RF212B_RegWrite(RG_PAN_ID_1, config.panId_15_8);
