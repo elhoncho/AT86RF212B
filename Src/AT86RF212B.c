@@ -315,11 +315,16 @@ void AT86RF212B_FrameRead(){
 	if(config.txCrc){
 		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
 			if(logging){
-				LOG(LOG_LVL_INFO, "CRC Failed\r\n");
+				LOG(LOG_LVL_DEBUG, "CRC Failed\r\n");
 			}
 			//Enable preamble detector to start receiving again
 			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 			return;
+		}
+		else{
+			if(logging){
+				LOG(LOG_LVL_INFO, "CRC Passed\r\n");
+			}
 		}
 	}
 
@@ -339,6 +344,11 @@ void AT86RF212B_FrameRead(){
 		return;
 	}
 	else{
+		if(logging){
+			char tmpStr[20];
+			sprintf(tmpStr, "Reading frame of size %i\r\n", length);
+			LOG(LOG_LVL_INFO, tmpStr);
+		}
 		//Length received is the length of the data plus two bytes for the command and PRI bytes
 		//add 3 to the length for the ED LQI and RX_STATUS bytes
 		uint8_t nLength = length+3;
