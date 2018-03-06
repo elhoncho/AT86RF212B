@@ -245,7 +245,7 @@ static void AT86RF212B_SendBeacon(){
 			//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
 			nLength-2,
 			//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
-			0x01,
+			0x04,
 			0x08,
 			//Sequence number
 			0x00,
@@ -471,7 +471,7 @@ void AT86RF212B_FrameRead(){
 			InterfaceWriteToDataOutputHAL(data, dataLength);
 		}
 		//Check if it is a beacon frame
-		else if((pRxData[0] & 0x07) == 0){
+		else if((pRxData[0] & 0x07) == 4){
 			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL;
 		}
 		else{
