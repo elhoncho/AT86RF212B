@@ -450,24 +450,24 @@ void AT86RF212B_FrameRead(){
 		//Link Quality Indication (LQI) pRxData[length+1]
 		//RX_STATUS pRxData[length+2]
 
-//		if(logging){
-//
-//			LOG(LOG_LVL_INFO, "\r\nData Received: \r\n");
-//
-//			char tmpStr[20];
-//			int i = 0;
-//			for(i = 0; i < nLength; i++){
-//				if(pRxData[i] < 32 || pRxData[i] > 126){
-//					sprintf(tmpStr, "0x%02X : \r\n", pRxData[i]);
-//				}
-//				else{
-//					sprintf(tmpStr, "0x%02X : %c\r\n", pRxData[i], pRxData[i]);
-//				}
-//				LOG(LOG_LVL_INFO, tmpStr);
-//			}
-//
-//			LOG(LOG_LVL_INFO, "\r\n>");
-//		}
+		if(logging){
+
+			LOG(LOG_LVL_INFO, "\r\nData Received: \r\n");
+
+			char tmpStr[20];
+			int i = 0;
+			for(i = 0; i < nLength; i++){
+				if(pRxData[i] < 32 || pRxData[i] > 126){
+					sprintf(tmpStr, "0x%02X : \r\n", pRxData[i]);
+				}
+				else{
+					sprintf(tmpStr, "0x%02X : %c\r\n", pRxData[i], pRxData[i]);
+				}
+				LOG(LOG_LVL_INFO, tmpStr);
+			}
+
+			LOG(LOG_LVL_INFO, "\r\n>");
+		}
 
 		//Check if it is a data frame
 		if((pRxData[2] & 0x07) == 1){
