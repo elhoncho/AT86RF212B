@@ -465,6 +465,9 @@ void AT86RF212B_FrameRead(){
 
 		//Check if it is a data frame
 		if((pRxData[2] & 0x07) == 1){
+			//Wait twice as long as beacons are being sent out
+			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
+
 			//length - AT86RF212B_DATA_OFFSET (header bytes)
 			uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
 			uint8_t data[dataLength];
