@@ -178,6 +178,7 @@ void AT86RF212B_Main(){
 
 				if(beaconFalures > 9){
 					AT86RF212B_Mode = 2;
+					beaconFalures = 0;
 				}
 			}
 			if(AT86RF212B_CheckForIRQ(TRX_IRQ_AMI)){
