@@ -177,7 +177,7 @@ void AT86RF212B_Main(){
 				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + 2000;
 
 				if(beaconFalures > 9){
-					AT86RF212B_Mode = 1;
+					AT86RF212B_Mode = 2;
 				}
 			}
 			if(AT86RF212B_CheckForIRQ(TRX_IRQ_AMI)){
