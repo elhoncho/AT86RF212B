@@ -7,13 +7,26 @@
 
 #include "interfaceHAL.h"
 #include "AT86RF212B.h"
-#include <AT86RF212B_Settings.h>
+#include "AT86RF212B_Constants.h"
+#include "AT86RF212B_Settings.h"
+#include "MainController.h"
 
 #if STM32
 #include<usbd_cdc_if.h>
 #endif
+
+
 void RawModeOpen(){
 	SetEchoInput(0);
+	switch(MainControllerGetMode()){
+		case MODE_RAW_RX:
+			AT86RF212B_PhyStateChange(RX_AACK_ON);
+			break;
+		case MODE_RAW_TX:
+			AT86RF212B_PhyStateChange(TX_ARET_ON);
+			break;
+	}
+
 }
 
 

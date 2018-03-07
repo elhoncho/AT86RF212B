@@ -8,6 +8,8 @@
 #ifndef TERMINAL_H_
 #define TERMINAL_H_
 
+#include<stdint.h>
+
 typedef void(*functionPointerType)(char *arg1, char *arg2);
 
 void TerminalOpen();

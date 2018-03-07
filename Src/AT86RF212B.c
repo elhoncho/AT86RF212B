@@ -1,64 +1,46 @@
 #include <stdint.h>
 #include <stdio.h>
-#include "AT86RF212B_HAL.h"
-#include "AT86RF212B.h"
-#include "AT86RF212B_Regesters.h"
-#include "AT86RF212B_Constants.h"
+#include <string.h>
 #include "generalHAL.h"
+#include "AT86RF212B.h"
+#include "interfaceHAL.h"
+#include "AT86RF212B_HAL.h"
+#include "MainController.h"
 #include "errors_and_logging.h"
 #include "AT86RF212B_Settings.h"
-#include "interfaceHAL.h"
-#include <string.h>
+#include "AT86RF212B_Regesters.h"
+#include "AT86RF212B_Constants.h"
+
+//TODO: *******NEED TO WRITE FUNCTIONALITY TO RECALIBRATE EVERY FIVE MINUITS*****************
 
 #define BEACON_TX_INTERVAL 1000
 
 //------------Private Function Prototypes----------------//
-//TODO:These should be uncommented as they are static
-//static void AT86RF212B_ID();
 static void 	AT86RF212B_PowerOnReset();
-//static void AT86RF212B_TRX_Reset();
-//static void 	AT86RF212B_StateMachineReset();
 static void 	AT86RF212B_BitWrite(uint8_t reg, uint8_t mask, uint8_t pos, uint8_t value);
 static void 	AT86RF212B_IrqInit ();
 static uint8_t 	AT86RF212B_FrameLengthRead();
 static void 	AT86RF212B_SetPhyMode();
 static void 	AT86RF212B_PhySetChannel();
-//static void 	PhyCalibrateFTN();
-//static void 	PhyCalibratePll();
 static void 	AT86RF212B_WaitForIRQ(uint8_t expectedIRQ);
 static uint8_t 	StateChangeCheck(uint8_t newState);
 static void 	UpdateState();
 static uint8_t 	IsStateActive();
 static uint8_t 	IsStatePllActive();
-//static uint8_t 	IsStateRxBasic();
-//static uint8_t 	IsStateRxActive();
-//static uint8_t 	IsStateConfig();
 static uint8_t 	IsStateTxBusy();
 static uint8_t 	IsStateRxBusy();
 static uint8_t 	IsStateBusy();
-//static uint8_t 	IsStateCmd();
 static uint8_t 	AT86RF212B_CheckForIRQ(uint8_t desiredIRQ);
 static void 	AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length);
 static void 	AT86RF212B_Delay(uint8_t time);
-static void 	AT86RF212B_PhyStateChange(uint8_t newState);
 static void 	AT86RF212B_WrongStateError();
-static void 	AT86RF212B_PowerOnSequence();
+static void 	AT86RF212B_SetRegisters();
 static void 	AT86RF212B_SendBeacon();
-
-
-/*
-static void 	AT86RF212B_AES_Io (uint8_t mode, uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata);
-static void 	AT86RF212B_AES_Read (uint8_t cmd, uint8_t *odata);
-static void 	AT86RF212B_AES_Write (uint8_t cmd, uint8_t start, uint8_t *idata);
-static void 	AT86RF212B_AES_Wrrd (uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata);
-static uint8_t 	AT86RF212B_FrameReadBlm (uint8_t *d);
-static void 	AT86RF212B_SramRead (uint8_t addr, uint8_t length, uint8_t *data);
-static void 	AT86RF212B_Sramrite (uint8_t addr, uint8_t length, uint8_t *data);
- */
 
 //-----------External Variables--------------------//
 extern uint8_t logging;
 extern uint8_t AT86RF212B_Mode;
+
 //------------Private Global Variables----------------//
 static AT86RF212B_Config config;
 static volatile uint8_t interupt = 0;
@@ -118,17 +100,14 @@ void AT86RF212B_Open(){
 	//Time to wait after power on
 	AT86RF212B_Delay(AT86RF212B_tTR1);
 
-	AT86RF212B_PowerOnSequence();
-
-	AT86RF212B_PhyStateChange(RX_AACK_ON);
+	AT86RF212B_PowerOnReset();
+	AT86RF212B_SetRegisters();
 }
 
-static void AT86RF212B_PowerOnSequence(){
+static void AT86RF212B_SetRegisters(){
 	if(logging){
-		LOG(LOG_LVL_ERROR, "Power On sequence initiated\r\n");
+		LOG(LOG_LVL_ERROR, "Registers initiated\r\n");
 	}
-	//Run power on reset sequence
-	AT86RF212B_PowerOnReset();
 	AT86RF212B_SetPhyMode();
 	AT86RF212B_PhySetChannel();
 }
@@ -177,7 +156,7 @@ void AT86RF212B_Main(){
 				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + 2000;
 
 				if(beaconFalures > 9){
-					AT86RF212B_Mode = 2;
+					MainControllerSetMode(MODE_TERMINAL);
 					beaconFalures = 0;
 				}
 			}
@@ -356,31 +335,6 @@ uint8_t AT86RF212B_BitRead (uint8_t addr, uint8_t mask, uint8_t pos){
 	return currentValue;
 }
 
-/*
-static void 	AT86RF212B_AES_Io (uint8_t mode, uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata){
-
-}
-static void 	AT86RF212B_AES_Read (uint8_t cmd, uint8_t *odata){
-
-}
-static void 	AT86RF212B_AES_Write (uint8_t cmd, uint8_t start, uint8_t *idata){
-
-}
-static void 	AT86RF212B_AES_Wrrd (uint8_t cmd, uint8_t start, uint8_t *idata, uint8_t *odata){
-
-}
-static uint8_t 	AT86RF212B_FrameReadBlm (uint8_t *d){
-
-}
-
-static void 	AT86RF212B_SramRead (uint8_t addr, uint8_t length, uint8_t *data){
-
-}
-static void 	AT86RF212B_Sramrite (uint8_t addr, uint8_t length, uint8_t *data){
-
-}
-*/
-
 static uint8_t 	AT86RF212B_FrameLengthRead(){
 	uint8_t pTxData[2] = {0x20, 0};
 	uint8_t pRxData[2] = {0};
@@ -466,7 +420,7 @@ void AT86RF212B_FrameRead(){
 				LOG(LOG_LVL_INFO, tmpStr);
 			}
 
-			LOG(LOG_LVL_INFO, "\r\n>");
+			LOG(LOG_LVL_INFO, "\r\n");
 		}
 
 		//Check if it is a data frame
@@ -640,9 +594,7 @@ void AT86RF212B_TRX_Reset(){
 		/* AT86RF212::TRX_OFF */
 		StateChangeCheck(TRX_OFF);
 
-		//Run power on reset sequence
-		AT86RF212B_SetPhyMode();
-		AT86RF212B_PhySetChannel();
+		AT86RF212B_SetRegisters();
 	}
 	else{
 		ASSERT(0);
@@ -658,7 +610,7 @@ void AT86RF212B_PhyStateChange(uint8_t newState){
 		if(logging){
 			LOG(LOG_LVL_INFO, "Power on startup beginning\r\n");
 		}
-		AT86RF212B_PowerOnSequence();
+		AT86RF212B_SetRegisters();
 		AT86RF212B_PhyStateChange(newState);
 	}
 	switch(newState){
@@ -698,7 +650,6 @@ void AT86RF212B_PhyStateChange(uint8_t newState){
 
 
 	case RX_AACK_ON:
-		//TODO:Remove this condition, was used for a terminal test
 		if(config.state == RX_AACK_ON){
 			return;
 		}
@@ -793,55 +744,6 @@ static void AT86RF212B_WrongStateError(){
 	}
 	AT86RF212B_TRX_Reset();
 }
-
-
-//static void PhyCalibrateFTN(){
-//	/* AT86RF212::[CONFIG] */
-//	if(IsStateConfig()){
-//		AT86RF212B_BitWrite(SR_FTN_START, 1);
-//		AT86RF212B_Delay(AT86RF212B_tTR16);
-//	}
-//	else{
-//		ASSERT(0);
-//		if(logging){
-//			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
-//		}
-//		AT86RF212B_TRX_Reset();
-//	}
-//}
-//static void PhyCalibratePll(){
-//	/* AT86RF212::PLL_ON */
-//	if(config.state == PLL_ON){
-//		AT86RF212B_BitWrite(SR_PLL_DCU_START, 1);
-//		AT86RF212B_BitWrite(SR_PLL_CF_START, 1);
-//		AT86RF212B_Delay(AT86RF212B_tTR21);
-//	}
-//	else{
-//		ASSERT(0);
-//		if(logging){
-//			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
-//		}
-//		AT86RF212B_TRX_Reset();
-//	}
-//}
-//
-//static void AT86RF212B_StateMachineReset(){
-//	/* AT86RF212::[ACTIVE] */
-//	if(IsStateActive()){
-//		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
-//		AT86RF212B_BitWrite(SR_TRX_CMD, CMD_FORCE_TRX_OFF);
-//		AT86RF212B_Delay(AT86RF212B_tTR12);
-//		/* AT86RF212::TRX_OFF */
-//		StateChangeCheck(TRX_OFF);
-//	}
-//	else{
-//		ASSERT(0);
-//		if(logging){
-//			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
-//		}
-//		AT86RF212B_TRX_Reset();
-//	}
-//}
 
 static void AT86RF212B_PhySetChannel(){
 	/* AT86RF212::TRX_OFF */
@@ -977,7 +879,6 @@ void AT86RF212B_TestSleep(){
 
 static uint8_t AT86RF212B_CheckForIRQ(uint8_t desiredIRQ){
 	if(interupt){
-
 		//Clear the interrupt flag
 		interupt = 0;
 
@@ -1000,9 +901,6 @@ static uint8_t AT86RF212B_CheckForIRQ(uint8_t desiredIRQ){
 				//Disable preamble detector to prevent receiving another frame before the current one is read
 				AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 			}
-
-
-
 			return 1;
 		}
 		//Not the IRQ being checked for but an IRQ was received
@@ -1011,7 +909,6 @@ static uint8_t AT86RF212B_CheckForIRQ(uint8_t desiredIRQ){
 			sprintf(tmpStr, "IRQ Received: 0x%02x\r\n", irqState);
 			LOG(LOG_LVL_ERROR, tmpStr);
 		}
-
 	}
 	return 0;
 }
@@ -1087,26 +984,6 @@ static uint8_t IsStatePllActive(){
 	return ((config.state == RX_ON) || (config.state == PLL_ON) || (config.state == TX_ARET_ON) || (config.state == RX_AACK_ON)) ? 1: 0;
 }
 
-//static uint8_t IsStateRxBasic(){
-////RX_ON, BUSY_RX
-//	return ((config.state == RX_ON) || (config.state == BUSY_RX)) ? 1: 0;
-//}
-//
-//static uint8_t IsStateRxActive(){
-////RX_ON, RX_AACK_ON
-//	return ((config.state == RX_ON) || (config.state == RX_AACK_ON)) ? 1: 0;
-//}
-//
-//static uint8_t IsStateConfig(){
-////	TRX_OFF, PLL_ON, TX_ARET_ON
-//
-////[CONFIG] can be extended to states
-////RX_ON and RX_AACK_ON if it can be ensured,
-////that the radio is not in [RX_BUSY], see also
-////use case PREAMBLE_DETECTOR_DISABLE.
-//	return ((config.state == TRX_OFF) || (config.state == PLL_ON) || (config.state == TX_ARET_ON)) ? 1: 0;
-//}
-
 static uint8_t IsStateTxBusy(){
 //	BUSY_TX, BUSY_TX_ARET
 	return ((config.state == BUSY_TX) || (config.state == BUSY_TX_ARET)) ? 1: 0;
@@ -1121,12 +998,6 @@ static uint8_t IsStateBusy(){
 //	[TX_BUSY], [RX_BUSY]
 	return (IsStateTxBusy() || IsStateRxBusy()) ? 1: 0;
 }
-
-//static uint8_t IsStateCmd(){
-////TRX_OFF, RX_ON, PLL_ON, TX_ARET_ON, RX_AACK_ON
-////	(all states which can be entered by writing to the SR_TRX_CMD sub register)
-//	return ((config.state == TRX_OFF) || (config.state == PLL_ON) || (config.state == TX_ARET_ON) || (config.state == RX_AACK_ON)) ? 1: 0;
-//}
 
 static void AT86RF212B_Delay(uint8_t time){
 	switch(time){
