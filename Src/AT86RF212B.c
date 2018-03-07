@@ -58,13 +58,13 @@ static void 	AT86RF212B_Sramrite (uint8_t addr, uint8_t length, uint8_t *data);
 
 //-----------External Variables--------------------//
 extern uint8_t logging;
-
-
+extern uint8_t AT86RF212B_Mode;
 //------------Private Global Variables----------------//
 static AT86RF212B_Config config;
 static volatile uint8_t interupt = 0;
 static uint8_t waitForEndOfRx = 0;
 static uint32_t nextBeaconUpdate = 0;
+static uint8_t beaconFalures;
 
 //==============================================================================================//
 //                                       Public Functions                                       //
@@ -173,7 +173,12 @@ void AT86RF212B_Main(){
 				if(logging){
 					LOG(LOG_LVL_DEBUG, "Beacon Failed\r\n");
 				}
+				beaconFalures++;
 				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + 2000;
+
+				if(beaconFalures > 9){
+					AT86RF212B_Mode = 1;
+				}
 			}
 			if(AT86RF212B_CheckForIRQ(TRX_IRQ_AMI)){
 				//AT86RF212B_BitRead(SR_TRAC_STATUS);
@@ -467,6 +472,7 @@ void AT86RF212B_FrameRead(){
 		if((pRxData[2] & 0x07) == 1){
 			//Wait twice as long as beacons are being sent out
 			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
+			beaconFalures = 0;
 
 			//length - AT86RF212B_DATA_OFFSET (header bytes)
 			uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
@@ -478,6 +484,7 @@ void AT86RF212B_FrameRead(){
 		else if((pRxData[2] & 0x07) == 4){
 			//Wait twice as long as beacons are being sent out
 			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
+			beaconFalures = 0;
 		}
 		else{
 			if(logging){

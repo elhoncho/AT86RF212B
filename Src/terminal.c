@@ -104,7 +104,7 @@ static void SendPhoto(char *arg1, char *arg2){
 
 static void RawMode(char *arg1, char *arg2){
 	RawModeOpen();
-	AT86RF212B_Mode = 0;
+	AT86RF212B_Mode = 2;
 }
 
 static void ReadFrame(char *arg1, char *arg2){
