@@ -38,6 +38,7 @@ static void 	AT86RF212B_SetRegisters();
 static void 	AT86RF212B_SendBeacon();
 static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
 static void 	AT86RF212B_SendACK(uint8_t sequenceNumber);
+static uint8_t 	AT86RF212B_WaitForACK(uint8_t sequenceNumber);
 
 
 
@@ -50,6 +51,7 @@ static AT86RF212B_Config config;
 static volatile uint8_t interupt = 0;
 static uint32_t nextBeaconUpdate = 0;
 static uint8_t beaconFalures;
+static uint8_t ackReceived = 0;
 
 //==============================================================================================//
 //                                       Public Functions                                       //
@@ -234,6 +236,16 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 
 	return pRxData[1];
 }
+static uint8_t AT86RF212B_WaitForACK(uint8_t sequenceNumber){
+	ackReceived = 0;
+	AT86RF212B_PhyStateChange(RX_ON);
+	while(1){
+		if(AT86RF212B_CheckForIRQ(TRX_IRQ_TRX_END)){
+			AT86RF212B_FrameRead();
+		}
+	}
+	return 1;
+}
 static void AT86RF212B_SendACK(uint8_t sequenceNumber){
 	UpdateState();
 	if(config.state != PLL_ON){
@@ -356,14 +368,14 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 		//Wait untill done transmitting data
 		//TODO: This may affect speed
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-		status = AT86RF212B_BitRead(SR_TRAC_STATUS);
-		if(status == TRAC_SUCCESS){
+
+		if(AT86RF212B_WaitForACK(sequenceNumber)){
 			if(logging){
 				LOG(LOG_LVL_INFO, "Frame TX Success\r\n");
 			}
 			sequenceNumber++;
 		}
-		else if(status == TRAC_NO_ACK){
+		else{
 			if(logging){
 				LOG(LOG_LVL_DEBUG, "No ACK on frame, retransmitting\r\n");
 			}
@@ -509,6 +521,13 @@ void AT86RF212B_FrameRead(){
 			//Wait twice as long as beacons are being sent out
 			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 			beaconFalures = 0;
+		}
+		//Check if it is an ACK
+		else if((pRxData[2] & 0x07) == 2){
+			//Wait twice as long as beacons are being sent out
+			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
+			beaconFalures = 0;
+			ackReceived = 1;
 		}
 		else{
 			if(logging){
