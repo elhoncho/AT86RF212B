@@ -760,7 +760,7 @@ void AT86RF212B_PhyStateChange(uint8_t newState){
 			AT86RF212B_PhyStateChange(PLL_ON);
 			AT86RF212B_PhyStateChange(TX_ARET_ON);
 		}
-		 /* AT86RF212::RX_AACK_ON */
+		 /* AT86RF212::RX_ON */
 		else if(config.state ==  RX_ON){
 			AT86RF212B_PhyStateChange(PLL_ON);
 			AT86RF212B_PhyStateChange(TX_ARET_ON);
@@ -779,6 +779,11 @@ void AT86RF212B_PhyStateChange(uint8_t newState){
 		//TODO:Remove this condition, was used for a terminal test
 		if(config.state == RX_ON){
 			return;
+		}
+		 /* AT86RF212::TX_ARET_ON */
+		else if(config.state ==  TX_ARET_ON){
+			AT86RF212B_PhyStateChange(PLL_ON);
+			AT86RF212B_PhyStateChange(TX_ARET_ON);
 		}
 		/* AT86RF212::TRX_OFF */
 		if(config.state == TRX_OFF){
