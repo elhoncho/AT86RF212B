@@ -46,7 +46,6 @@ extern uint8_t AT86RF212B_Mode;
 //------------Private Global Variables----------------//
 static AT86RF212B_Config config;
 static volatile uint8_t interupt = 0;
-static uint8_t waitForEndOfRx = 0;
 static uint32_t nextBeaconUpdate = 0;
 static uint8_t beaconFalures;
 
@@ -162,7 +161,8 @@ void AT86RF212B_Main(){
 					beaconFalures = 0;
 				}
 			}
-			if(AT86RF212B_CheckForIRQ(TRX_IRQ_AMI)){
+			//Careful if you chage this to AMI or the start of RX because you will need to check the FCF. If the FCF is not valid a TRX_END will not be generatedCRC Failed
+			if(AT86RF212B_CheckForIRQ(TRX_IRQ_TRX_END)){
 				//AT86RF212B_BitRead(SR_TRAC_STATUS);
 				AT86RF212B_FrameRead();
 			}
@@ -359,10 +359,6 @@ static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
 }
 
 void AT86RF212B_FrameRead(){
-	if(waitForEndOfRx){
-		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-	}
-
 	if(config.txCrc){
 		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
 			if(logging){
@@ -899,12 +895,6 @@ static uint8_t AT86RF212B_CheckForIRQ(uint8_t desiredIRQ){
 			}
 
 			if((irqState & desiredIRQ) == TRX_IRQ_AMI){
-				if(irqState & TRX_IRQ_TRX_END){
-					waitForEndOfRx = 0;
-				}
-				else{
-					waitForEndOfRx = 1;
-				}
 				//Disable preamble detector to prevent receiving another frame before the current one is read
 				AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 			}
