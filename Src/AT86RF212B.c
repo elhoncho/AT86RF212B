@@ -237,13 +237,19 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 	return pRxData[1];
 }
 static uint8_t AT86RF212B_WaitForACK(uint8_t sequenceNumber){
+	//TODO: What happens when timer rolls
+	uint32_t timeout = AT86RF212B_SysTickMsHAL() + 100;
 	ackReceived = 0;
 	AT86RF212B_PhyStateChange(RX_ON);
-	while(1){
+	while(ackReceived == 0){
+		if(AT86RF212B_SysTickMsHAL() > timeout){
+			return 0;
+		}
 		if(AT86RF212B_CheckForIRQ(TRX_IRQ_TRX_END)){
 			AT86RF212B_FrameRead();
 		}
 	}
+	AT86RF212B_PhyStateChange(PLL_ON);
 	return 1;
 }
 static void AT86RF212B_SendACK(uint8_t sequenceNumber){

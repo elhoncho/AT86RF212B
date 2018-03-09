@@ -58,7 +58,8 @@ static void TestSleep(char *arg1, char *arg2);
 static void TestBit(char *arg1, char *arg2);
 static void ReadFrame(char *arg1, char *arg2);
 static void WriteFrame(char *arg1, char *arg2);
-static void RawMode(char *arg1, char *arg2);
+static void RawModeRx(char *arg1, char *arg2);
+static void RawModeTx(char *arg1, char *arg2);
 static void SendPhoto(char *arg1, char *arg2);
 
 static const struct commandStruct commands[] ={
@@ -74,7 +75,8 @@ static const struct commandStruct commands[] ={
 	{"bt", &TestBit, "Test a bit of a reg"},
 	{"rf", &ReadFrame, "Reads the frame buffer"},
 	{"tx", &WriteFrame, "Writes to the frame buffer"},
-	{"rmr", &RawMode, "Run in raw mode rx"},
+	{"rmr", &RawModeRx, "Run in raw mode rx"},
+	{"rmt", &RawModeTx, "Run in raw mode tx"},
 	{"sf", &SendPhoto, "Send a photo"},
     {"",0,""} //End of commands indicator. Must be last.
 };
@@ -104,7 +106,11 @@ static void SendPhoto(char *arg1, char *arg2){
 	return;
 }
 
-static void RawMode(char *arg1, char *arg2){
+static void RawModeTx(char *arg1, char *arg2){
+	MainControllerSetMode(MODE_RAW_TX);
+}
+
+static void RawModeRx(char *arg1, char *arg2){
 	MainControllerSetMode(MODE_RAW_RX);
 }
 
