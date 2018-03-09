@@ -408,7 +408,9 @@ void AT86RF212B_FrameRead(){
 
 		pTxData[0] = 0x20;
 
+
 		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+
 		//Enable preamble detector to start receiving again
 		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 
@@ -894,7 +896,7 @@ static uint8_t AT86RF212B_CheckForIRQ(uint8_t desiredIRQ){
 				LOG(LOG_LVL_INFO, tmpStr);
 			}
 
-			if((irqState & desiredIRQ) == TRX_IRQ_AMI){
+			if((irqState & desiredIRQ) == TRX_IRQ_TRX_END){
 				//Disable preamble detector to prevent receiving another frame before the current one is read
 				AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 			}
