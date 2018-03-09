@@ -61,6 +61,7 @@ static void WriteFrame(char *arg1, char *arg2);
 static void RawModeRx(char *arg1, char *arg2);
 static void RawModeTx(char *arg1, char *arg2);
 static void SendPhoto(char *arg1, char *arg2);
+static void ExitProgram(char *arg1, char *arg2);
 
 static const struct commandStruct commands[] ={
     {"clear", &CmdClear, "Clears the screen"},
@@ -78,6 +79,7 @@ static const struct commandStruct commands[] ={
 	{"rmr", &RawModeRx, "Run in raw mode rx"},
 	{"rmt", &RawModeTx, "Run in raw mode tx"},
 	{"sf", &SendPhoto, "Send a photo"},
+	{"sf", &ExitProgram, "Send a photo"},
     {"",0,""} //End of commands indicator. Must be last.
 };
 
@@ -104,6 +106,10 @@ static void SendPhoto(char *arg1, char *arg2){
 		}
 	}
 	return;
+}
+
+static void ExitProgram(char *arg1, char *arg2){
+	exit(0);
 }
 
 static void RawModeTx(char *arg1, char *arg2){
