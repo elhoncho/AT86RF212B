@@ -148,9 +148,6 @@ void AT86RF212B_Main(){
 			}
 			break;
 		case PLL_ON:
-			AT86RF212B_PhyStateChange(RX_ON);
-			break;
-		case TX_ARET_ON:
 			//Send Beacon
 			if(AT86RF212B_SysTickMsHAL() > nextBeaconUpdate){
 				if(logging){
@@ -159,6 +156,16 @@ void AT86RF212B_Main(){
 				AT86RF212B_SendBeacon();
 				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + BEACON_TX_INTERVAL;
 			}
+			break;
+		case TX_ARET_ON:
+//			//Send Beacon
+//			if(AT86RF212B_SysTickMsHAL() > nextBeaconUpdate){
+//				if(logging){
+//					LOG(LOG_LVL_DEBUG, "Sending Beacon\r\n");
+//				}
+//				AT86RF212B_SendBeacon();
+//				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + BEACON_TX_INTERVAL;
+//			}
 			break;
 		case BUSY_RX_AACK:
 			break;
@@ -229,11 +236,11 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 }
 static void AT86RF212B_SendACK(uint8_t sequenceNumber){
 	UpdateState();
-	if(config.state != TX_ARET_ON){
-		AT86RF212B_PhyStateChange(TX_ARET_ON);
+	if(config.state != PLL_ON){
+		AT86RF212B_PhyStateChange(PLL_ON);
 		AT86RF212B_SendACK(sequenceNumber);
 	}
-	else if(config.state == TX_ARET_ON){
+	else if(config.state == PLL_ON){
 		if(logging){
 			LOG(LOG_LVL_DEBUG, "Sending ACK\r\n");
 		}
@@ -276,11 +283,11 @@ static void AT86RF212B_SendACK(uint8_t sequenceNumber){
 
 static void AT86RF212B_SendBeacon(){
 	UpdateState();
-		if(config.state != TX_ARET_ON){
-			AT86RF212B_PhyStateChange(TX_ARET_ON);
+		if(config.state != PLL_ON){
+			AT86RF212B_PhyStateChange(PLL_ON);
 			AT86RF212B_SendBeacon();
 		}
-		else if(config.state == TX_ARET_ON){
+		else if(config.state == PLL_ON){
 			//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
 			#if AT86RF212B_TX_CRC
 				uint8_t nLength = 13;
@@ -321,11 +328,11 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 	static uint8_t sequenceNumber = 0;
 	uint8_t status;
 	UpdateState();
-	if(config.state != TX_ARET_ON){
-		AT86RF212B_PhyStateChange(TX_ARET_ON);
+	if(config.state != PLL_ON){
+		AT86RF212B_PhyStateChange(PLL_ON);
 		AT86RF212B_TxData(frame, length);
 	}
-	else if(config.state == TX_ARET_ON){
+	else if(config.state == PLL_ON){
 		if(length > AT86RF212B_MAX_DATA){
 			ASSERT(0);
 			if(logging){
