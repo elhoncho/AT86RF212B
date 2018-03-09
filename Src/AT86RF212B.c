@@ -228,45 +228,49 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 }
 static void AT86RF212B_SendACK(uint8_t sequenceNumber){
 	UpdateState();
-		if(config.state != TX_ARET_ON){
-			AT86RF212B_PhyStateChange(TX_ARET_ON);
-			AT86RF212B_SendACK(sequenceNumber);
+	if(config.state != TX_ARET_ON){
+		AT86RF212B_PhyStateChange(TX_ARET_ON);
+		AT86RF212B_SendACK(sequenceNumber);
+	}
+	else if(config.state == TX_ARET_ON){
+		if(logging){
+			LOG(LOG_LVL_DEBUG, "Sending ACK\r\n");
 		}
-		else if(config.state == TX_ARET_ON){
-			//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
-			#if AT86RF212B_TX_CRC
-				uint8_t nLength = 11;
-			#else
-				uint8_t nLength = 9;
-			#endif
 
-			uint8_t pRxData[nLength];
+		//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
+		#if AT86RF212B_TX_CRC
+			uint8_t nLength = 11;
+		#else
+			uint8_t nLength = 9;
+		#endif
 
-			//Frame write command
-			uint8_t pTxData[11] = {0x60,
-			//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
-			nLength-2,
-			//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
-			0x02,
-			0x08,
-			//Sequence number
-			sequenceNumber,
-			//Target PAN
-			AT86RF212B_PAN_ID_7_0,
-			AT86RF212B_PAN_ID_15_8,
-			//Target ID
-			AT86RF212B_SHORT_ADDR_TARGET_7_0,
-			AT86RF212B_SHORT_ADDR_TARGET_15_8};
+		uint8_t pRxData[nLength];
 
-			AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+		//Frame write command
+		uint8_t pTxData[11] = {0x60,
+		//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
+		nLength-2,
+		//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
+		0x02,
+		0x08,
+		//Sequence number
+		sequenceNumber,
+		//Target PAN
+		AT86RF212B_PAN_ID_7_0,
+		AT86RF212B_PAN_ID_15_8,
+		//Target ID
+		AT86RF212B_SHORT_ADDR_TARGET_7_0,
+		AT86RF212B_SHORT_ADDR_TARGET_15_8};
 
-			AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
-			AT86RF212B_Delay(AT86RF212B_t7);
-			AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
-			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 
-			AT86RF212B_PhyStateChange(RX_ON);
-		}
+		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
+		AT86RF212B_Delay(AT86RF212B_t7);
+		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
+		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+
+		AT86RF212B_PhyStateChange(RX_ON);
+	}
 }
 
 static void AT86RF212B_SendBeacon(){
