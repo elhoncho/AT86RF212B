@@ -79,7 +79,7 @@ static const struct commandStruct commands[] ={
 	{"rmr", &RawModeRx, "Run in raw mode rx"},
 	{"rmt", &RawModeTx, "Run in raw mode tx"},
 	{"sf", &SendPhoto, "Send a photo"},
-	{"sf", &ExitProgram, "Send a photo"},
+	{"exit", &ExitProgram, "Exit the Program"},
     {"",0,""} //End of commands indicator. Must be last.
 };
 
