@@ -760,6 +760,11 @@ void AT86RF212B_PhyStateChange(uint8_t newState){
 			AT86RF212B_PhyStateChange(PLL_ON);
 			AT86RF212B_PhyStateChange(TX_ARET_ON);
 		}
+		 /* AT86RF212::RX_AACK_ON */
+		else if(config.state ==  RX_ON){
+			AT86RF212B_PhyStateChange(PLL_ON);
+			AT86RF212B_PhyStateChange(TX_ARET_ON);
+		}
 		/* AT86RF212::BUSY_TX */
 		else if(IsStateTxBusy()){
 			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_TX_ARET_ON);
