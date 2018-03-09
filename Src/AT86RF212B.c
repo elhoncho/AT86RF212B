@@ -36,6 +36,8 @@ static void 	AT86RF212B_Delay(uint8_t time);
 static void 	AT86RF212B_WrongStateError();
 static void 	AT86RF212B_SetRegisters();
 static void 	AT86RF212B_SendBeacon();
+static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
+
 
 //-----------External Variables--------------------//
 extern uint8_t logging;
@@ -342,6 +344,20 @@ static uint8_t 	AT86RF212B_FrameLengthRead(){
 	return pRxData[1];
 }
 
+static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
+	char tmpStr[20];
+	int i = 0;
+	for (i = 0; i < nLength; i++) {
+		if (pData[i] < 32 || pData[i] > 126) {
+			sprintf(tmpStr, "0x%02X : \r\n", pData[i]);
+		} else {
+			sprintf(tmpStr, "0x%02X : %c\r\n", pData[i], pData[i]);
+		}
+		LOG(LOG_LVL_INFO, tmpStr);
+	}
+	LOG(LOG_LVL_INFO, "\r\n");
+}
+
 void AT86RF212B_FrameRead(){
 	if(waitForEndOfRx){
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
@@ -405,22 +421,8 @@ void AT86RF212B_FrameRead(){
 		//RX_STATUS pRxData[length+2]
 
 		if(logging){
-
 			LOG(LOG_LVL_INFO, "\r\nData Received: \r\n");
-
-			char tmpStr[20];
-			int i = 0;
-			for(i = 0; i < nLength; i++){
-				if(pRxData[i] < 32 || pRxData[i] > 126){
-					sprintf(tmpStr, "0x%02X : \r\n", pRxData[i]);
-				}
-				else{
-					sprintf(tmpStr, "0x%02X : %c\r\n", pRxData[i], pRxData[i]);
-				}
-				LOG(LOG_LVL_INFO, tmpStr);
-			}
-
-			LOG(LOG_LVL_INFO, "\r\n");
+			AT86RF212B_PrintBuffer(nLength, pRxData);
 		}
 
 		//Check if it is a data frame
@@ -493,6 +495,11 @@ static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
 	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 
 	sequenceNumber += 1;
+
+	if(logging){
+		LOG(LOG_LVL_INFO, "\r\nData Received: \r\n");
+		AT86RF212B_PrintBuffer(nLength, pRxData);
+	}
 }
 
 static void 	AT86RF212B_IrqInit (){
