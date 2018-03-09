@@ -20,7 +20,7 @@
 #define AT86RF212B_DATA_OFFSET 9
 
 //Change this to set the RF mode
-#define AT86RF212B_PHY_MODE 		2;
+#define AT86RF212B_PHY_MODE 		7;
 //scrambler configuration for O-QPSK_{400,1000}; values { 0: disabled, 1: enabled (default)}.
 #define AT86RF212B_SCRAMEN 			1
 //transmit signal pulse shaping for O-QPSK_{250,500,1000}; values {0 : half-sine filtering (default), 1 : RC-0.8 filtering}.
