@@ -537,6 +537,11 @@ void AT86RF212B_FrameRead(){
 			}
 		}
 
+		if(logging){
+			LOG(LOG_LVL_INFO, "Data Sent\r\n");
+			AT86RF212B_PrintBuffer(nLength, pRxData);
+		}
+
 		//Enable preamble detector to start receiving again
 		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 	}
@@ -586,7 +591,7 @@ static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length, uint8_t seque
 	sequenceNumber += 1;
 
 	if(logging){
-		LOG(LOG_LVL_DEBUG, "\r\nData Sent: \r\n");
+		LOG(LOG_LVL_INFO, "\r\nData Sent: \r\n");
 		AT86RF212B_PrintBuffer(nLength, pTxData);
 	}
 }
