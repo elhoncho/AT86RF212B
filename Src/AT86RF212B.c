@@ -412,7 +412,7 @@ void AT86RF212B_FrameRead(){
 		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 
 		//Enable preamble detector to start receiving again
-		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+		//AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 
 		//Energy Detection (ED) pRxData[length]
 		//Link Quality Indication (LQI) pRxData[length+1]
