@@ -111,7 +111,7 @@ void AT86RF212B_Open(){
 
 static void AT86RF212B_SetRegisters(){
 	if(logging){
-		LOG(LOG_LVL_ERROR, "Registers initiated\r\n");
+		LOG(LOG_LVL_DEBUG, "Registers initiated\r\n");
 	}
 	AT86RF212B_SetPhyMode();
 	AT86RF212B_PhySetChannel();
@@ -459,7 +459,7 @@ void AT86RF212B_FrameRead(){
 		}
 		else{
 			if(logging){
-				LOG(LOG_LVL_INFO, "CRC Passed\r\n");
+				LOG(LOG_LVL_DEBUG, "CRC Passed\r\n");
 			}
 		}
 	}
@@ -487,7 +487,7 @@ void AT86RF212B_FrameRead(){
 		if(logging){
 			char tmpStr[20];
 			sprintf(tmpStr, "Reading frame of size %i\r\n", length);
-			LOG(LOG_LVL_INFO, tmpStr);
+			LOG(LOG_LVL_DEBUG, tmpStr);
 		}
 
 		//Length received is the length of the data plus two bytes for the command and PRI bytes
@@ -503,11 +503,6 @@ void AT86RF212B_FrameRead(){
 		//Check if ACK is requested
 		if(pRxData[2] & 0x20){
 			AT86RF212B_SendACK(pRxData[3]);
-		}
-
-		if(logging){
-			LOG(LOG_LVL_INFO, "\r\nData Received: \r\n");
-			AT86RF212B_PrintBuffer(nLength, pRxData);
 		}
 
 		//Check if it is a data frame
@@ -591,7 +586,7 @@ static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length, uint8_t seque
 	sequenceNumber += 1;
 
 	if(logging){
-		LOG(LOG_LVL_INFO, "\r\nData Sent: \r\n");
+		LOG(LOG_LVL_DEBUG, "\r\nData Sent: \r\n");
 		AT86RF212B_PrintBuffer(nLength, pTxData);
 	}
 }
@@ -709,7 +704,7 @@ void AT86RF212B_PhyStateChange(uint8_t newState){
 	UpdateState();
 	if(config.state == P_ON){
 		if(logging){
-			LOG(LOG_LVL_INFO, "Power on startup beginning\r\n");
+			LOG(LOG_LVL_DEBUG, "Power on startup beginning\r\n");
 		}
 		AT86RF212B_SetRegisters();
 		AT86RF212B_PhyStateChange(newState);
@@ -1012,7 +1007,7 @@ static uint8_t AT86RF212B_CheckForIRQ(uint8_t desiredIRQ){
 		if(logging){
 			char tmpStr[20];
 			sprintf(tmpStr, "IRQ Received: 0x%02x\r\n", irqState);
-			LOG(LOG_LVL_ERROR, tmpStr);
+			LOG(LOG_LVL_DEBUG, tmpStr);
 		}
 	}
 	return 0;
@@ -1029,7 +1024,7 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 		if(AT86RF212B_SysTickMsHAL() > timeout){
 			ASSERT(0);
 			if(logging){
-				LOG(LOG_LVL_ERROR, "Timeout while waiting for IRQ\r\n");
+				LOG(LOG_LVL_DEBUG, "Timeout while waiting for IRQ\r\n");
 			}
 			return;
 		}
