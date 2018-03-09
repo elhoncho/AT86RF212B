@@ -37,6 +37,7 @@ static void 	AT86RF212B_WrongStateError();
 static void 	AT86RF212B_SetRegisters();
 static void 	AT86RF212B_SendBeacon();
 static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
+static void 	AT86RF212B_SendACK(uint8_t sequenceNumber);
 
 
 //-----------External Variables--------------------//
@@ -123,17 +124,30 @@ void AT86RF212B_Main(){
 		case P_ON:
 			break;
 		case TRX_OFF:
-			AT86RF212B_PhyStateChange(RX_AACK_ON);
+			AT86RF212B_PhyStateChange(RX_ON);
 			break;
 		case SLEEP:
 			break;
 		case RX_ON:
+			//Check for Beacon
+			if(AT86RF212B_SysTickMsHAL() > nextBeaconUpdate){
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "Beacon Failed\r\n");
+				}
+				beaconFalures++;
+				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + 2000;
+
+				if(beaconFalures > 9){
+					MainControllerSetMode(MODE_TERMINAL);
+					beaconFalures = 0;
+				}
+			}
 			if(AT86RF212B_CheckForIRQ(TRX_IRQ_TRX_END)){
 				AT86RF212B_FrameRead();
 			}
 			break;
 		case PLL_ON:
-			AT86RF212B_PhyStateChange(RX_AACK_ON);
+			AT86RF212B_PhyStateChange(RX_ON);
 			break;
 		case TX_ARET_ON:
 			//Send Beacon
@@ -148,24 +162,24 @@ void AT86RF212B_Main(){
 		case BUSY_RX_AACK:
 			break;
 		case RX_AACK_ON:
-			//Check for Beacon
-			if(AT86RF212B_SysTickMsHAL() > nextBeaconUpdate){
-				if(logging){
-					LOG(LOG_LVL_DEBUG, "Beacon Failed\r\n");
-				}
-				beaconFalures++;
-				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + 2000;
-
-				if(beaconFalures > 9){
-					MainControllerSetMode(MODE_TERMINAL);
-					beaconFalures = 0;
-				}
-			}
-			//Careful if you chage this to AMI or the start of RX because you will need to check the FCF. If the FCF is not valid a TRX_END will not be generatedCRC Failed
-			if(AT86RF212B_CheckForIRQ(TRX_IRQ_TRX_END)){
-				//AT86RF212B_BitRead(SR_TRAC_STATUS);
-				AT86RF212B_FrameRead();
-			}
+//			//Check for Beacon
+//			if(AT86RF212B_SysTickMsHAL() > nextBeaconUpdate){
+//				if(logging){
+//					LOG(LOG_LVL_DEBUG, "Beacon Failed\r\n");
+//				}
+//				beaconFalures++;
+//				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + 2000;
+//
+//				if(beaconFalures > 9){
+//					MainControllerSetMode(MODE_TERMINAL);
+//					beaconFalures = 0;
+//				}
+//			}
+//			//Careful if you chage this to AMI or the start of RX because you will need to check the FCF. If the FCF is not valid a TRX_END will not be generatedCRC Failed
+//			if(AT86RF212B_CheckForIRQ(TRX_IRQ_TRX_END)){
+//				//AT86RF212B_BitRead(SR_TRAC_STATUS);
+//				AT86RF212B_FrameRead();
+//			}
 			break;
 		case BUSY_TX:
 			break;
@@ -178,9 +192,9 @@ void AT86RF212B_Main(){
 		default:
 			ASSERT(0);
 			if(logging){
-				LOG(LOG_LVL_ERROR, "Unknown state, changing to RX_AACK_ON\r\n");
+				LOG(LOG_LVL_ERROR, "Unknown state, changing to RX_ON\r\n");
 			}
-			AT86RF212B_PhyStateChange(RX_AACK_ON);
+			AT86RF212B_PhyStateChange(RX_ON);
 			break;
 	}
 }
@@ -212,6 +226,49 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 
 	return pRxData[1];
 }
+static void AT86RF212B_SendACK(uint8_t sequenceNumber){
+	UpdateState();
+		if(config.state != TX_ARET_ON){
+			AT86RF212B_PhyStateChange(TX_ARET_ON);
+			AT86RF212B_SendACK(sequenceNumber);
+		}
+		else if(config.state == TX_ARET_ON){
+			//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
+			#if AT86RF212B_TX_CRC
+				uint8_t nLength = 11;
+			#else
+				uint8_t nLength = 9;
+			#endif
+
+			uint8_t pRxData[nLength];
+
+			//Frame write command
+			uint8_t pTxData[11] = {0x60,
+			//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
+			nLength-2,
+			//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
+			0x02,
+			0x08,
+			//Sequence number
+			sequenceNumber,
+			//Target PAN
+			AT86RF212B_PAN_ID_7_0,
+			AT86RF212B_PAN_ID_15_8,
+			//Target ID
+			AT86RF212B_SHORT_ADDR_TARGET_7_0,
+			AT86RF212B_SHORT_ADDR_TARGET_15_8};
+
+			AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+
+			AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
+			AT86RF212B_Delay(AT86RF212B_t7);
+			AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
+			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+
+			AT86RF212B_PhyStateChange(RX_ON);
+		}
+}
+
 static void AT86RF212B_SendBeacon(){
 	UpdateState();
 		if(config.state != TX_ARET_ON){
@@ -359,21 +416,21 @@ static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
 }
 
 void AT86RF212B_FrameRead(){
-//	if(config.txCrc){
-//		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
-//			if(logging){
-//				LOG(LOG_LVL_DEBUG, "CRC Failed\r\n");
-//			}
-//			//Enable preamble detector to start receiving again
-//			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-//			return;
-//		}
-//		else{
-//			if(logging){
-//				LOG(LOG_LVL_INFO, "CRC Passed\r\n");
-//			}
-//		}
-//	}
+	if(config.txCrc){
+		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
+			if(logging){
+				LOG(LOG_LVL_DEBUG, "CRC Failed\r\n");
+			}
+			//Enable preamble detector to start receiving again
+			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+			return;
+		}
+		else{
+			if(logging){
+				LOG(LOG_LVL_INFO, "CRC Passed\r\n");
+			}
+		}
+	}
 
 	uint8_t length = AT86RF212B_FrameLengthRead();
 	if(length == 0){
@@ -400,6 +457,7 @@ void AT86RF212B_FrameRead(){
 			sprintf(tmpStr, "Reading frame of size %i\r\n", length);
 			LOG(LOG_LVL_INFO, tmpStr);
 		}
+
 		//Length received is the length of the data plus two bytes for the command and PRI bytes
 		//add 3 to the length for the ED LQI and RX_STATUS bytes
 		uint8_t nLength = length+3;
@@ -408,15 +466,12 @@ void AT86RF212B_FrameRead(){
 
 		pTxData[0] = 0x20;
 
-
 		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 
-		//Enable preamble detector to start receiving again
-		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-
-		//Energy Detection (ED) pRxData[length]
-		//Link Quality Indication (LQI) pRxData[length+1]
-		//RX_STATUS pRxData[length+2]
+		//Check if ACK is requested
+		if(pRxData[2] & 0x20){
+			AT86RF212B_SendACK(pRxData[3]);
+		}
 
 		if(logging){
 			LOG(LOG_LVL_INFO, "\r\nData Received: \r\n");
@@ -447,6 +502,9 @@ void AT86RF212B_FrameRead(){
 				LOG(LOG_LVL_ERROR, "Unknown Frame Type\r\n");
 			}
 		}
+
+		//Enable preamble detector to start receiving again
+		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 	}
 	return;
 }
