@@ -128,7 +128,7 @@ void AT86RF212B_Main(){
 		case SLEEP:
 			break;
 		case RX_ON:
-			if(AT86RF212B_CheckForIRQ(TRX_IRQ_AMI)){
+			if(AT86RF212B_CheckForIRQ(TRX_IRQ_TRX_END)){
 				AT86RF212B_FrameRead();
 			}
 			break;
@@ -412,7 +412,7 @@ void AT86RF212B_FrameRead(){
 		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 
 		//Enable preamble detector to start receiving again
-		//AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 
 		//Energy Detection (ED) pRxData[length]
 		//Link Quality Indication (LQI) pRxData[length+1]
