@@ -359,21 +359,21 @@ static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
 }
 
 void AT86RF212B_FrameRead(){
-	if(config.txCrc){
-		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
-			if(logging){
-				LOG(LOG_LVL_DEBUG, "CRC Failed\r\n");
-			}
-			//Enable preamble detector to start receiving again
-			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-			return;
-		}
-		else{
-			if(logging){
-				LOG(LOG_LVL_INFO, "CRC Passed\r\n");
-			}
-		}
-	}
+//	if(config.txCrc){
+//		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
+//			if(logging){
+//				LOG(LOG_LVL_DEBUG, "CRC Failed\r\n");
+//			}
+//			//Enable preamble detector to start receiving again
+//			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+//			return;
+//		}
+//		else{
+//			if(logging){
+//				LOG(LOG_LVL_INFO, "CRC Passed\r\n");
+//			}
+//		}
+//	}
 
 	uint8_t length = AT86RF212B_FrameLengthRead();
 	if(length == 0){
