@@ -55,7 +55,7 @@ SPI_HandleTypeDef hspi;
 #define RST_PIN 7
 #define DIG2_PIN 2
 
-#define SPI_CLK 5000000
+#define SPI_CLK 4000000
 #define SPI_CHANNEL 1
 
 void HAL_Callback();
