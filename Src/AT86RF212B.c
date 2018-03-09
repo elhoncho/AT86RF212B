@@ -353,7 +353,6 @@ static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
 		} else {
 			sprintf(tmpStr, "0x%02X : %c\r\n", pData[i], pData[i]);
 		}
-		LOG(LOG_LVL_INFO, tmpStr);
 	}
 	LOG(LOG_LVL_INFO, "\r\n");
 }
@@ -497,7 +496,7 @@ static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
 	sequenceNumber += 1;
 
 	if(logging){
-		LOG(LOG_LVL_INFO, "\r\nData Received: \r\n");
+		LOG(LOG_LVL_INFO, "\r\nData Sent: \r\n");
 		AT86RF212B_PrintBuffer(nLength, pRxData);
 	}
 }
