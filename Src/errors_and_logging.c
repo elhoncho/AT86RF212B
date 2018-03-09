@@ -15,7 +15,7 @@
 
 #define MIN_LOG_LVL 0
 
-uint8_t logging = LOG_LVL_DEBUG;
+uint8_t logging = LOG_LVL_ERROR;
 
 void LOG(LOG_LVL lvl, char * message){
 	if(lvl >= MIN_LOG_LVL){
