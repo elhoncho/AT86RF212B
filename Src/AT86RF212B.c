@@ -200,8 +200,8 @@ void AT86RF212B_Main(){
 		case RX_ON_NOCLK:
 			break;
 		default:
-			ASSERT(0);
 			if(logging){
+				ASSERT(0);
 				LOG(LOG_LVL_ERROR, "Unknown state, changing to RX_ON\r\n");
 			}
 			AT86RF212B_PhyStateChange(RX_ON);
@@ -238,11 +238,15 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 }
 static uint8_t AT86RF212B_WaitForACK(uint8_t sequenceNumber){
 	//TODO: What happens when timer rolls
-	uint32_t timeout = AT86RF212B_SysTickMsHAL() + 100;
+	uint32_t timeout = AT86RF212B_SysTickMsHAL() + 10;
 	ackReceived = 0;
 	AT86RF212B_PhyStateChange(RX_ON);
 	while(ackReceived == 0){
 		if(AT86RF212B_SysTickMsHAL() > timeout){
+			if(logging){
+				LOG(LOG_LVL_DEBUG, "Timeout waiting for ACK\r\n");
+			}
+			AT86RF212B_PhyStateChange(PLL_ON);
 			return 0;
 		}
 		if(AT86RF212B_CheckForIRQ(TRX_IRQ_TRX_END)){
@@ -343,6 +347,7 @@ static void AT86RF212B_SendBeacon(){
 }
 //Length is the lengt of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
+	static uint8_t failedTransmissions = 0;
 	static uint8_t sequenceNumber = 0;
 	uint8_t status;
 	UpdateState();
@@ -352,15 +357,15 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 	}
 	else if(config.state == PLL_ON){
 		if(length > AT86RF212B_MAX_DATA){
-			ASSERT(0);
 			if(logging){
+				ASSERT(0);
 				LOG(LOG_LVL_ERROR, "Frame Too Large\r\n");
 			}
 			return;
 		}
 		else if(length == 0){
-			ASSERT(0);
 			if(logging){
+				ASSERT(0);
 				LOG(LOG_LVL_ERROR, "No data to send\r\n");
 			}
 			return;
@@ -380,17 +385,26 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 				LOG(LOG_LVL_INFO, "Frame TX Success\r\n");
 			}
 			sequenceNumber++;
+			failedTransmissions = 0;
 		}
 		else{
-			if(logging){
-				LOG(LOG_LVL_DEBUG, "No ACK on frame, retransmitting\r\n");
+			if(failedTransmissions < 10){
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "No ACK on frame, retransmitting\r\n");
+				}
+				failedTransmissions++;
+				AT86RF212B_TxData(frame, length);
 			}
-			AT86RF212B_TxData(frame, length);
+			else{
+				if(logging){
+					LOG(LOG_LVL_ERROR, "Too many transmissions, dropping frame!\r\n");
+				}
+			}
 		}
 	}
 	else{
-		ASSERT(0);
 		if(logging){
+			ASSERT(0);
 			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
 		}
 	}
@@ -466,8 +480,8 @@ void AT86RF212B_FrameRead(){
 
 	uint8_t length = AT86RF212B_FrameLengthRead();
 	if(length == 0){
-		ASSERT(0);
 		if(logging){
+			ASSERT(0);
 			LOG(LOG_LVL_ERROR, "No data on frame\r\n");
 		}
 		//Enable preamble detector to start receiving again
@@ -475,8 +489,8 @@ void AT86RF212B_FrameRead(){
 		return;
 	}
 	else if(length > 127){
-		ASSERT(0);
 		if(logging){
+			ASSERT(0);
 			LOG(LOG_LVL_ERROR, "Frame too large\r\n");
 		}
 		//Enable preamble detector to start receiving again
@@ -648,8 +662,8 @@ static void AT86RF212B_PowerOnReset(){
 		StateChangeCheck(TRX_OFF);
 	}
 	else{
-		ASSERT(0);
 		if(logging){
+			ASSERT(0);
 			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
 		}
 		AT86RF212B_TRX_Reset();
@@ -698,8 +712,8 @@ void AT86RF212B_TRX_Reset(){
 		AT86RF212B_SetRegisters();
 	}
 	else{
-		ASSERT(0);
 		if(logging){
+			ASSERT(0);
 			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: This is real bad\r\n");
 		}
 	}
@@ -849,8 +863,8 @@ void AT86RF212B_PhyStateChange(uint8_t newState){
 }
 
 static void AT86RF212B_WrongStateError(){
-	ASSERT(0);
 	if(logging){
+		ASSERT(0);
 		LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
 	}
 	AT86RF212B_TRX_Reset();
@@ -865,8 +879,8 @@ static void AT86RF212B_PhySetChannel(){
 		AT86RF212B_BitWrite(SR_CHANNEL, 0);
 	}
 	else{
-		ASSERT(0);
 		if(logging){
+			ASSERT(0);
 			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
 		}
 		AT86RF212B_TRX_Reset();
@@ -928,8 +942,8 @@ static void AT86RF212B_SetPhyMode(){
 			config.gctxOffset = 2;
 			break;
 		default:
-			ASSERT(0);
 			if(logging){
+				ASSERT(0);
 				LOG(LOG_LVL_ERROR, "Unknown Phy Configuration\r\n");
 			}
 			return;
@@ -968,8 +982,8 @@ static void AT86RF212B_SetPhyMode(){
 		AT86RF212B_RegWrite(RG_IEEE_ADDR_7, config.extAddr_63_56);
 	}
 	else{
-		ASSERT(0);
 		if(logging){
+			ASSERT(0);
 			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
 		}
 	}
@@ -1027,8 +1041,8 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 	uint32_t timeout = AT86RF212B_SysTickMsHAL()+maxTime;
 	while(!interupt){
 		if(AT86RF212B_SysTickMsHAL() > timeout){
-			ASSERT(0);
 			if(logging){
+				ASSERT(0);
 				LOG(LOG_LVL_DEBUG, "Timeout while waiting for IRQ\r\n");
 			}
 			return;
@@ -1040,8 +1054,8 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 	uint8_t irqState = AT86RF212B_RegRead(RG_IRQ_STATUS);
 
 	if(!(irqState & expectedIRQ)){
-		ASSERT(0);
 		if(logging){
+			ASSERT(0);
 			uint8_t tmpStr[20];
 			sprintf((char *)tmpStr, "Wrong Interrupt: %02X\r\n", irqState);
 			LOG(LOG_LVL_ERROR, (char *)tmpStr);
@@ -1057,8 +1071,8 @@ static uint8_t StateChangeCheck(uint8_t newState){
 	UpdateState();
 
 	if(config.state != newState){
-		ASSERT(0);
 		if(logging){
+			ASSERT(0);
 			LOG(LOG_LVL_ERROR, "State Change Failed Trying Again\r\n");
 		}
 
@@ -1068,8 +1082,11 @@ static uint8_t StateChangeCheck(uint8_t newState){
 
 		return 0;
 	}
-	else if(logging){
-		LOG(LOG_LVL_DEBUG, "State Change Success!\r\n");
+	else{
+		if(logging){
+			LOG(LOG_LVL_DEBUG, "State Change Success!\r\n");
+
+		}
 		return 1;
 	}
 	return 0;
@@ -1212,8 +1229,10 @@ static void AT86RF212B_Delay(uint8_t time){
 					DelayUs(16);
 					break;
 				default:
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					if(logging){
+						ASSERT(0);
+						LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					}
 					break;
 			}
 
@@ -1270,8 +1289,10 @@ static void AT86RF212B_Delay(uint8_t time){
 					DelayUs(8);
 					break;
 				default:
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					if(logging){
+						ASSERT(0);
+						LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					}
 					break;
 			}
 			break;
@@ -1314,8 +1335,10 @@ static void AT86RF212B_Delay(uint8_t time){
 					DelayUs(32);
 					break;
 				default:
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					if(logging){
+						ASSERT(0);
+						LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					}
 					break;
 			}
 			break;
@@ -1340,8 +1363,10 @@ static void AT86RF212B_Delay(uint8_t time){
 					DelayUs(128);
 					break;
 				default:
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					if(logging){
+						ASSERT(0);
+						LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					}
 					break;
 			}
 			break;
@@ -1393,14 +1418,18 @@ static void AT86RF212B_Delay(uint8_t time){
 					DelayUs(5);
 					break;
 				default:
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					if(logging){
+						ASSERT(0);
+						LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+					}
 					break;
 			}
 			break;
 		default:
-			ASSERT(0);
-			LOG(LOG_LVL_ERROR, "Unknown Time Mode");
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, "Unknown Time Mode");
+			}
 			break;
 			return;
 	}
