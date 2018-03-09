@@ -31,13 +31,14 @@ static uint8_t 	IsStateTxBusy();
 static uint8_t 	IsStateRxBusy();
 static uint8_t 	IsStateBusy();
 static uint8_t 	AT86RF212B_CheckForIRQ(uint8_t desiredIRQ);
-static void 	AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length);
+static void 	AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length, uint8_t sequenceNumber);
 static void 	AT86RF212B_Delay(uint8_t time);
 static void 	AT86RF212B_WrongStateError();
 static void 	AT86RF212B_SetRegisters();
 static void 	AT86RF212B_SendBeacon();
 static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
 static void 	AT86RF212B_SendACK(uint8_t sequenceNumber);
+
 
 
 //-----------External Variables--------------------//
@@ -317,6 +318,7 @@ static void AT86RF212B_SendBeacon(){
 }
 //Length is the lengt of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
+	static uint8_t sequenceNumber = 0;
 	uint8_t status;
 	UpdateState();
 	if(config.state != TX_ARET_ON){
@@ -339,7 +341,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 			return;
 		}
 		//TODO: The speed of transmission can be improved by not waiting for all the data to be written before starting the TX phase
-		AT86RF212B_FrameWrite(frame, length);
+		AT86RF212B_FrameWrite(frame, length, sequenceNumber);
 
 		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
 		AT86RF212B_Delay(AT86RF212B_t7);
@@ -352,6 +354,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 			if(logging){
 				LOG(LOG_LVL_INFO, "Frame TX Success\r\n");
 			}
+			sequenceNumber++;
 		}
 		else if(status == TRAC_NO_ACK){
 			if(logging){
@@ -513,8 +516,7 @@ void AT86RF212B_FrameRead(){
 	return;
 }
 
-static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length){
-	static uint8_t sequenceNumber = 0;
+static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length, uint8_t sequenceNumber){
 	//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
 #if AT86RF212B_TX_CRC
 	uint8_t nLength = length+11;
