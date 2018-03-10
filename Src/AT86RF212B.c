@@ -147,7 +147,7 @@ void AT86RF212B_Main(){
 					beaconFalures = 0;
 				}
 			}
-			if(AT86RF212B_CheckForIRQ(TRX_IRQ_TRX_END)){
+			if(AT86RF212B_CheckForIRQ(TRX_IRQ_RX_START)){
 				AT86RF212B_FrameRead();
 			}
 			break;
@@ -240,7 +240,7 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 }
 static uint8_t AT86RF212B_WaitForACK(uint8_t sequenceNumber){
 	//TODO: What happens when timer rolls
-	uint32_t timeout = AT86RF212B_SysTickMsHAL() + 2;
+	uint32_t timeout = AT86RF212B_SysTickMsHAL() + 10;
 	ackReceived = 0;
 	AT86RF212B_PhyStateChange(RX_ON);
 	while(ackReceived == 0){
@@ -251,7 +251,7 @@ static uint8_t AT86RF212B_WaitForACK(uint8_t sequenceNumber){
 			AT86RF212B_PhyStateChange(PLL_ON);
 			return 0;
 		}
-		if(AT86RF212B_CheckForIRQ(TRX_IRQ_TRX_END)){
+		else if(AT86RF212B_CheckForIRQ(TRX_IRQ_RX_START)){
 			AT86RF212B_FrameRead();
 		}
 	}
@@ -293,6 +293,9 @@ static void AT86RF212B_SendACK(uint8_t sequenceNumber){
 		//Target ID
 		AT86RF212B_SHORT_ADDR_TARGET_7_0,
 		AT86RF212B_SHORT_ADDR_TARGET_15_8};
+
+
+		DelayUs(200);
 
 		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 
@@ -497,22 +500,6 @@ static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
 }
 
 void AT86RF212B_FrameRead(){
-//	if(config.txCrc){
-//		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
-//			if(logging){
-//				LOG(LOG_LVL_DEBUG, "CRC Failed\r\n");
-//			}
-//			//Enable preamble detector to start receiving again
-//			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-//			return;
-//		}
-//		else{
-//			if(logging){
-//				LOG(LOG_LVL_DEBUG, "CRC Passed\r\n");
-//			}
-//		}
-//	}
-
 	uint8_t length = AT86RF212B_FrameLengthRead();
 	if(length == 0){
 		if(logging){
@@ -561,8 +548,25 @@ void AT86RF212B_FrameRead(){
 		//Read the last three status bytes and end the frame read
 		AT86RF212B_StartReadAndWriteHAL(&pTxData[length], &pRxData[length], 3);
 
-		//TODO: This needs to go away, should disable interrupts during this time instead. This just clears the interrupt flag
-		AT86RF212B_CheckForIRQ(0);
+
+		//TODO: What happens if the IRQ that started this function includes the TRX_END? This will lock here, or miss frames
+		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+
+		if(config.txCrc){
+			if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "CRC Failed\r\n");
+				}
+				//Enable preamble detector to start receiving again
+				AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+				return;
+			}
+			else{
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "CRC Passed\r\n");
+				}
+			}
+		}
 
 		//Check if ACK is requested
 		if(pRxData[2] & 0x20){
@@ -602,7 +606,7 @@ void AT86RF212B_FrameRead(){
 		}
 
 		if(logging){
-			LOG(LOG_LVL_INFO, "Data Sent\r\n");
+			LOG(LOG_LVL_INFO, "Data Received\r\n");
 			AT86RF212B_PrintBuffer(nLength, pRxData);
 		}
 
@@ -1020,6 +1024,7 @@ static void AT86RF212B_SetPhyMode(){
 		AT86RF212B_BitWrite(SR_AACK_UPLD_RES_FT, config.AACK_UPLD_RES_FT);
 		AT86RF212B_BitWrite(SR_AACK_FLTR_RES_FT, config.AACK_FLTR_RES_FT);
 		AT86RF212B_BitWrite(SR_RX_SAFE_MODE, config.rxSafeMode);
+		AT86RF212B_BitWrite(SR_RX_BL_CTRL, config.RX_BL_CTRL);
 		AT86RF212B_RegWrite(RG_PAN_ID_0, config.panId_7_0);
 		AT86RF212B_RegWrite(RG_PAN_ID_1, config.panId_15_8);
 		AT86RF212B_RegWrite(RG_SHORT_ADDR_0, config.shortAddr_7_0);
