@@ -423,7 +423,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission){
 			}
 		}
 		else{
-			if(failedTransmissions < 10){
+			//if(failedTransmissions < 10){
 				if(logging){
 					LOG(LOG_LVL_DEBUG, "No ACK on frame, retransmitting\r\n");
 				}
@@ -436,12 +436,12 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission){
 
 				failedTransmissions++;
 				AT86RF212B_TxData(frame, length, 1);
-			}
-			else{
-				if(logging){
-					LOG(LOG_LVL_ERROR, "Too many transmissions, dropping frame!\r\n");
-				}
-			}
+//			}
+//			else{
+//				if(logging){
+//					LOG(LOG_LVL_ERROR, "Too many transmissions, dropping frame!\r\n");
+//				}
+//			}
 		}
 	}
 	else{
@@ -541,7 +541,8 @@ void AT86RF212B_FrameRead(){
 		//Send command to start frame read
 		AT86RF212B_StartReadAndWriteHAL(pTxData, pRxData, 1);
 		//Timeout after four octet periods
-		uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*4;
+		//uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*4;
+		uint32_t timeout = GeneralGetMs() + 10;
 		uint8_t i = 1;
 		while(i < length){
 			if(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 0){
@@ -550,7 +551,7 @@ void AT86RF212B_FrameRead(){
 				//750 ns is needed to make sure that the IRQ pin is valid
 				GeneralDelayUs(1);
 			}
-			else if(GeneralGetUs() > timeout){
+			else if(GeneralGetMs() > timeout){
 				if(logging){
 					ASSERT(0);
 					LOG(LOG_LVL_ERROR, "Frame Read Aborted, timeout\r\n");
