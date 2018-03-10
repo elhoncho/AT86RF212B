@@ -8,8 +8,9 @@
 #ifndef MYINC_GENERALHAL_H_
 #define MYINC_GENERALHAL_H_
 
-void GeneralHAL_Open();
-void DelayMs(uint32_t timeMs);
-void DelayUs(uint32_t timeUs);
+uint32_t GeneralGetMs();
+uint32_t GeneralGetUs();
+void GeneralDelayMs(uint32_t timeMs);
+void GeneralDelayUs(uint32_t timeUs);
 
 #endif /* MYINC_GENERALHAL_H_ */

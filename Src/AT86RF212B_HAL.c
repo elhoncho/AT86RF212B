@@ -268,26 +268,20 @@ void AT86RF212B_ContinueReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, ui
 
 void AT86RF212B_StopReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t size){
 #if RASPBERRY_PI
-	wiringPiSPIDataRW(SPI_CHANNEL, pTxData, size);
+	if(size > 0){
+		wiringPiSPIDataRW(SPI_CHANNEL, pTxData, size);
+	}
 	digitalWrite(SPI_NSS_PIN, HIGH);
 	memcpy(pRxData, pTxData, size);
 #endif
 
 #if STM32
-	HAL_SPI_TransmitReceive(&hspi , pTxData, pRxData, size, timeout);
-	//TODO: This probably needs to be changed, could lock up here.
-	while(hspi.State == HAL_SPI_STATE_BUSY);
+	if(size > 0){
+		HAL_SPI_TransmitReceive(&hspi , pTxData, pRxData, size, timeout);
+		//TODO: This probably needs to be changed, could lock up here.
+		while(hspi.State == HAL_SPI_STATE_BUSY);
+	}
 	HAL_GPIO_WritePin(SPI_NSS_PORT, SPI_NSS_PIN, GPIO_PIN_SET);
-#endif
-}
-
-uint32_t AT86RF212B_SysTickMsHAL(){
-#if RASPBERRY_PI
-	return millis();
-#endif
-
-#if STM32
-	return HAL_GetTick();
 #endif
 }
 

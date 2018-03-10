@@ -39,6 +39,7 @@ static void 	AT86RF212B_SendBeacon();
 static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
 static void 	AT86RF212B_SendACK(uint8_t sequenceNumber);
 static uint8_t 	AT86RF212B_WaitForACK(uint8_t sequenceNumber);
+static uint32_t AT86RF212B_UsPerOctet();
 
 
 
@@ -135,12 +136,12 @@ void AT86RF212B_Main(){
 			break;
 		case RX_ON:
 			//Check for Beacon
-			if(AT86RF212B_SysTickMsHAL() > nextBeaconUpdate){
+			if(GeneralGetMs() > nextBeaconUpdate){
 				if(logging){
 					LOG(LOG_LVL_DEBUG, "Beacon Failed\r\n");
 				}
 				beaconFalures++;
-				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + 2000;
+				nextBeaconUpdate = GeneralGetMs() + 2000;
 
 				if(beaconFalures > 9){
 					MainControllerSetMode(MODE_TERMINAL);
@@ -153,34 +154,34 @@ void AT86RF212B_Main(){
 			break;
 		case PLL_ON:
 			//Send Beacon
-			if(AT86RF212B_SysTickMsHAL() > nextBeaconUpdate){
+			if(GeneralGetMs() > nextBeaconUpdate){
 				if(logging){
 					LOG(LOG_LVL_DEBUG, "Sending Beacon\r\n");
 				}
 				AT86RF212B_SendBeacon();
-				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + BEACON_TX_INTERVAL;
+				nextBeaconUpdate = GeneralGetMs() + BEACON_TX_INTERVAL;
 			}
 			break;
 		case TX_ARET_ON:
 //			//Send Beacon
-//			if(AT86RF212B_SysTickMsHAL() > nextBeaconUpdate){
+//			if(GeneralGetMs() > nextBeaconUpdate){
 //				if(logging){
 //					LOG(LOG_LVL_DEBUG, "Sending Beacon\r\n");
 //				}
 //				AT86RF212B_SendBeacon();
-//				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + BEACON_TX_INTERVAL;
+//				nextBeaconUpdate = GeneralGetMs() + BEACON_TX_INTERVAL;
 //			}
 			break;
 		case BUSY_RX_AACK:
 			break;
 		case RX_AACK_ON:
 //			//Check for Beacon
-//			if(AT86RF212B_SysTickMsHAL() > nextBeaconUpdate){
+//			if(GeneralGetMs() > nextBeaconUpdate){
 //				if(logging){
 //					LOG(LOG_LVL_DEBUG, "Beacon Failed\r\n");
 //				}
 //				beaconFalures++;
-//				nextBeaconUpdate = AT86RF212B_SysTickMsHAL() + 2000;
+//				nextBeaconUpdate = GeneralGetMs() + 2000;
 //
 //				if(beaconFalures > 9){
 //					MainControllerSetMode(MODE_TERMINAL);
@@ -240,11 +241,11 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 }
 static uint8_t AT86RF212B_WaitForACK(uint8_t sequenceNumber){
 	//TODO: What happens when timer rolls
-	uint32_t timeout = AT86RF212B_SysTickMsHAL() + 10;
+	uint32_t timeout = GeneralGetMs() + 10;
 	ackReceived = 0;
 	AT86RF212B_PhyStateChange(RX_ON);
 	while(ackReceived == 0){
-		if(AT86RF212B_SysTickMsHAL() > timeout){
+		if(GeneralGetMs() > timeout){
 			if(logging){
 				LOG(LOG_LVL_DEBUG, "Timeout waiting for ACK\r\n");
 			}
@@ -354,7 +355,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission){
 	static uint8_t sequenceNumber = 0;
 	uint8_t status;
 
-	uint32_t startTime = AT86RF212B_SysTickMsHAL();
+	uint32_t startTime = GeneralGetMs();
 	uint8_t tmpStr[40];
 
 	UpdateState();
@@ -389,9 +390,9 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission){
 		}
 
 		if(logging){
-			sprintf(tmpStr, "---------------------\r\nTime to buffer: %i\r\n", AT86RF212B_SysTickMsHAL() - startTime);
+			sprintf(tmpStr, "---------------------\r\nTime to buffer: %i\r\n", GeneralGetMs() - startTime);
 			LOG(LOG_LVL_ERROR, tmpStr);
-			startTime = AT86RF212B_SysTickMsHAL();
+			startTime = GeneralGetMs();
 		}
 
 
@@ -400,9 +401,9 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission){
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
 
 		if(logging){
-			sprintf(tmpStr, "Time to end of tx: %i\r\n", AT86RF212B_SysTickMsHAL() - startTime);
+			sprintf(tmpStr, "Time to end of tx: %i\r\n", GeneralGetMs() - startTime);
 			LOG(LOG_LVL_ERROR, tmpStr);
-			startTime = AT86RF212B_SysTickMsHAL();
+			startTime = GeneralGetMs();
 		}
 
 		if(AT86RF212B_WaitForACK(sequenceNumber)){
@@ -413,9 +414,9 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission){
 			failedTransmissions = 0;
 
 			if(logging){
-				sprintf(tmpStr, "Time to ACK: %i\r\n", AT86RF212B_SysTickMsHAL() - startTime);
+				sprintf(tmpStr, "Time to ACK: %i\r\n", GeneralGetMs() - startTime);
 				LOG(LOG_LVL_ERROR, tmpStr);
-				startTime = AT86RF212B_SysTickMsHAL();
+				startTime = GeneralGetMs();
 			}
 		}
 		else{
@@ -425,9 +426,9 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission){
 				}
 
 				if(logging){
-					sprintf(tmpStr, "Time to failed: %i\r\n", AT86RF212B_SysTickMsHAL() - startTime);
+					sprintf(tmpStr, "Time to failed: %i\r\n", GeneralGetMs() - startTime);
 					LOG(LOG_LVL_ERROR, tmpStr);
-					startTime = AT86RF212B_SysTickMsHAL();
+					startTime = GeneralGetMs();
 				}
 
 				failedTransmissions++;
@@ -536,6 +537,8 @@ void AT86RF212B_FrameRead(){
 
 		//Send command to start frame read
 		AT86RF212B_StartReadAndWriteHAL(pTxData, pRxData, 1);
+		//Timeout after two octet periods, as per datasheet
+		uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
 		uint8_t i = 1;
 		while(i < length){
 			if(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 0){
@@ -543,6 +546,16 @@ void AT86RF212B_FrameRead(){
 				i++;
 				//750 ns is needed to make sure that the IRQ pin is valid
 				DelayUs(1);
+			}
+			else if(GeneralGetUs() > timeout){
+				if(logging){
+					LOG(LOG_LVL_ERROR, "Frame Read Aborted, timeout\r\n");
+				}
+				ASSERT(0);
+				AT86RF212B_StopReadAndWriteHAL(0, 0, 0);
+				//Enable preamble detector to start receiving again
+				AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+				return;
 			}
 		}
 		//Read the last three status bytes and end the frame read
@@ -576,7 +589,7 @@ void AT86RF212B_FrameRead(){
 		//Check if it is a data frame
 		if((pRxData[2] & 0x07) == 1){
 			//Wait twice as long as beacons are being sent out
-			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
+			nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 			beaconFalures = 0;
 
 			//length - AT86RF212B_DATA_OFFSET (header bytes)
@@ -588,13 +601,13 @@ void AT86RF212B_FrameRead(){
 		//Check if it is a beacon frame
 		else if((pRxData[2] & 0x07) == 4){
 			//Wait twice as long as beacons are being sent out
-			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
+			nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 			beaconFalures = 0;
 		}
 		//Check if it is an ACK
 		else if((pRxData[2] & 0x07) == 2){
 			//Wait twice as long as beacons are being sent out
-			nextBeaconUpdate = AT86RF212B_SysTickMsHAL()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
+			nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 			beaconFalures = 0;
 			ackReceived = 1;
 		}
@@ -1095,9 +1108,9 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 	uint32_t maxTime = 1000;
 
 	//TODO: What happens if the timer rolls
-	uint32_t timeout = AT86RF212B_SysTickMsHAL()+maxTime;
+	uint32_t timeout = GeneralGetMs()+maxTime;
 	while(!interupt){
-		if(AT86RF212B_SysTickMsHAL() > timeout){
+		if(GeneralGetMs() > timeout){
 			if(logging){
 				ASSERT(0);
 				LOG(LOG_LVL_DEBUG, "Timeout while waiting for IRQ\r\n");
@@ -1491,4 +1504,39 @@ static void AT86RF212B_Delay(uint8_t time){
 			return;
 	}
 	return;
+}
+
+uint32_t AT86RF212B_UsPerOctet(){
+	switch(config.phyMode){
+		case AT86RF212B_BPSK_20:
+			return 400;
+			break;
+		case AT86RF212B_BPSK_40:
+			return 200;
+			break;
+		case AT86RF212B_O_QPSK_100:
+			return 80;
+			break;
+		case AT86RF212B_O_QPSK_200:
+			return 40;
+			break;
+		case AT86RF212B_O_QPSK_400:
+			return 20;
+			break;
+		case AT86RF212B_O_QPSK_250:
+			return 32;
+			break;
+		case AT86RF212B_O_QPSK_500:
+			return 16;
+			break;
+		case AT86RF212B_O_QPSK_1000:
+			return 8;
+			break;
+		default:
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+			}
+			return 400;
+			break;
 }

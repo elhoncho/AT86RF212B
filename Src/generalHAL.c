@@ -16,7 +16,29 @@
 #include "stm32f4xx_hal.h"
 #endif
 
-void DelayMs(uint32_t timeMs){
+uint32_t GeneralGetMs(uint32_t timeMs){
+#if RASPBERRY_PI
+	return millis();
+#endif
+
+#if STM32
+	return HAL_GetTick();
+#endif
+}
+
+uint32_t GeneralGetUs(uint32_t timeUs){
+#if RASPBERRY_PI
+	return micros();
+#endif
+
+#if STM32
+	//Start the counter
+	DWT->CTRL |= 1;
+	return DWT->CYCCNT;
+#endif
+}
+
+void GeneralDelayMs(uint32_t timeMs){
 #if RASPBERRY_PI
 	delay(timeMs);
 #endif
@@ -27,7 +49,7 @@ void DelayMs(uint32_t timeMs){
 	return;
 }
 
-void DelayUs(uint32_t timeUs){
+void GeneralDelayUs(uint32_t timeUs){
 #if RASPBERRY_PI
 	delayMicroseconds(timeUs);
 #endif
@@ -39,8 +61,6 @@ void DelayUs(uint32_t timeUs){
 	//Start the counter
 	DWT->CTRL |= 1;
 	while(DWT->CYCCNT < stopTime);
-	//Stop the counter
-	DWT->CTRL |= 0;
 #endif
 	return;
 }
