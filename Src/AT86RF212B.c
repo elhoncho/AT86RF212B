@@ -553,7 +553,10 @@ void AT86RF212B_FrameRead(){
 			}
 			else if(GeneralGetMs() > timeout){
 				if(logging){
+					uint8_t tmpStr[20];
 					ASSERT(0);
+					sprintf(tmpStr, "Frames Read: %i\r\n", i);
+					LOG(LOG_LVL_ERROR, tmpStr);
 					LOG(LOG_LVL_ERROR, "Frame Read Aborted, timeout\r\n");
 				}
 				AT86RF212B_StopReadAndWriteHAL(0, 0, 0);
