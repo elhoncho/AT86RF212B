@@ -78,6 +78,8 @@ void AT86RF212B_Open(){
 	config.rxSafeMode = AT86RF212B_RX_SAFE_MODE;
 	config.AACK_UPLD_RES_FT = AT86RF212B_AACK_UPLD_RES_FT;
 	config.AACK_FLTR_RES_FT = AT86RF212B_AACK_FLTR_RES_FT;
+	//Enables the IRQ pin to be used as a frame buffer indicator during frame buffer reads
+	config.RX_BL_CTRL = AT86RF212B_RX_BL_CTRL;
 	//Address Filtering
 	config.panId_7_0 = AT86RF212B_PAN_ID_7_0;
 	config.panId_15_8 = AT86RF212B_PAN_ID_15_8;
@@ -238,7 +240,7 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 }
 static uint8_t AT86RF212B_WaitForACK(uint8_t sequenceNumber){
 	//TODO: What happens when timer rolls
-	uint32_t timeout = AT86RF212B_SysTickMsHAL() + 10;
+	uint32_t timeout = AT86RF212B_SysTickMsHAL() + 2;
 	ackReceived = 0;
 	AT86RF212B_PhyStateChange(RX_ON);
 	while(ackReceived == 0){
@@ -312,9 +314,9 @@ static void AT86RF212B_SendBeacon(){
 		else if(config.state == PLL_ON){
 			//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
 			#if AT86RF212B_TX_CRC
-				uint8_t nLength = 13;
-			#else
 				uint8_t nLength = 11;
+			#else
+				uint8_t nLength = 9;
 			#endif
 
 			uint8_t pRxData[nLength];
@@ -333,9 +335,7 @@ static void AT86RF212B_SendBeacon(){
 			AT86RF212B_PAN_ID_15_8,
 			//Target ID
 			AT86RF212B_SHORT_ADDR_TARGET_7_0,
-			AT86RF212B_SHORT_ADDR_TARGET_15_8,
-			'A',
-			'A'};
+			AT86RF212B_SHORT_ADDR_TARGET_15_8};
 
 			AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 
@@ -346,14 +346,18 @@ static void AT86RF212B_SendBeacon(){
 		}
 }
 //Length is the lengt of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
-void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
+void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission){
 	static uint8_t failedTransmissions = 0;
 	static uint8_t sequenceNumber = 0;
 	uint8_t status;
+
+	uint32_t startTime = AT86RF212B_SysTickMsHAL();
+	uint8_t tmpStr[40];
+
 	UpdateState();
 	if(config.state != PLL_ON){
 		AT86RF212B_PhyStateChange(PLL_ON);
-		AT86RF212B_TxData(frame, length);
+		AT86RF212B_TxData(frame, length, 0);
 	}
 	else if(config.state == PLL_ON){
 		if(length > AT86RF212B_MAX_DATA){
@@ -371,14 +375,32 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 			return;
 		}
 		//TODO: The speed of transmission can be improved by not waiting for all the data to be written before starting the TX phase
-		AT86RF212B_FrameWrite(frame, length, sequenceNumber);
+		if(retransmission){
+			//TODO: Will an ACK overwrite the header part of this
+			AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
+			AT86RF212B_Delay(AT86RF212B_t7);
+			AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
+		}
+		else{
+			AT86RF212B_FrameWrite(frame, length, sequenceNumber);
+		}
 
-		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
-		AT86RF212B_Delay(AT86RF212B_t7);
-		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
+		if(logging){
+			sprintf(tmpStr, "---------------------\r\nTime to buffer: %i\r\n", AT86RF212B_SysTickMsHAL() - startTime);
+			LOG(LOG_LVL_ERROR, tmpStr);
+			startTime = AT86RF212B_SysTickMsHAL();
+		}
+
+
 		//Wait untill done transmitting data
 		//TODO: This may affect speed
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+
+		if(logging){
+			sprintf(tmpStr, "Time to end of tx: %i\r\n", AT86RF212B_SysTickMsHAL() - startTime);
+			LOG(LOG_LVL_ERROR, tmpStr);
+			startTime = AT86RF212B_SysTickMsHAL();
+		}
 
 		if(AT86RF212B_WaitForACK(sequenceNumber)){
 			if(logging){
@@ -386,14 +408,27 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 			}
 			sequenceNumber++;
 			failedTransmissions = 0;
+
+			if(logging){
+				sprintf(tmpStr, "Time to ACK: %i\r\n", AT86RF212B_SysTickMsHAL() - startTime);
+				LOG(LOG_LVL_ERROR, tmpStr);
+				startTime = AT86RF212B_SysTickMsHAL();
+			}
 		}
 		else{
 			if(failedTransmissions < 10){
 				if(logging){
 					LOG(LOG_LVL_DEBUG, "No ACK on frame, retransmitting\r\n");
 				}
+
+				if(logging){
+					sprintf(tmpStr, "Time to failed: %i\r\n", AT86RF212B_SysTickMsHAL() - startTime);
+					LOG(LOG_LVL_ERROR, tmpStr);
+					startTime = AT86RF212B_SysTickMsHAL();
+				}
+
 				failedTransmissions++;
-				AT86RF212B_TxData(frame, length);
+				AT86RF212B_TxData(frame, length, 1);
 			}
 			else{
 				if(logging){
@@ -462,21 +497,21 @@ static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
 }
 
 void AT86RF212B_FrameRead(){
-	if(config.txCrc){
-		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
-			if(logging){
-				LOG(LOG_LVL_DEBUG, "CRC Failed\r\n");
-			}
-			//Enable preamble detector to start receiving again
-			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-			return;
-		}
-		else{
-			if(logging){
-				LOG(LOG_LVL_DEBUG, "CRC Passed\r\n");
-			}
-		}
-	}
+//	if(config.txCrc){
+//		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
+//			if(logging){
+//				LOG(LOG_LVL_DEBUG, "CRC Failed\r\n");
+//			}
+//			//Enable preamble detector to start receiving again
+//			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+//			return;
+//		}
+//		else{
+//			if(logging){
+//				LOG(LOG_LVL_DEBUG, "CRC Passed\r\n");
+//			}
+//		}
+//	}
 
 	uint8_t length = AT86RF212B_FrameLengthRead();
 	if(length == 0){
@@ -512,7 +547,22 @@ void AT86RF212B_FrameRead(){
 
 		pTxData[0] = 0x20;
 
-		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+		//Send command to start frame read
+		AT86RF212B_StartReadAndWriteHAL(pTxData, pRxData, 1);
+		uint8_t i = 1;
+		while(i < length){
+			if(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 0){
+				AT86RF212B_ContinueReadAndWriteHAL(&pTxData[i], &pRxData[i], 1);
+				i++;
+				//750 ns is needed to make sure that the IRQ pin is valid
+				DelayUs(1);
+			}
+		}
+		//Read the last three status bytes and end the frame read
+		AT86RF212B_StartReadAndWriteHAL(&pTxData[length], &pRxData[length], 3);
+
+		//TODO: This needs to go away, should disable interrupts during this time instead. This just clears the interrupt flag
+		AT86RF212B_CheckForIRQ(0);
 
 		//Check if ACK is requested
 		if(pRxData[2] & 0x20){
@@ -562,45 +612,47 @@ void AT86RF212B_FrameRead(){
 	return;
 }
 
-static void AT86RF212B_FrameWrite(uint8_t * frame, uint8_t length, uint8_t sequenceNumber){
+static void AT86RF212B_FrameWrite(uint8_t * pTxData, uint8_t length, uint8_t sequenceNumber){
 	//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
 #if AT86RF212B_TX_CRC
-	uint8_t nLength = length+11;
+	uint8_t nLength = length+2;
 #else
-	uint8_t nLength = length+9;
+	uint8_t nLength = length;
 #endif
 
-	uint8_t pTxData[nLength];
-	uint8_t pRxData[nLength];
+	static uint8_t pRxData[150];
 
+	static uint8_t pRxHeader[9];
+	static uint8_t pTxHeader[9] = {
 	//Frame write command
-	pTxData[0] = 0x60;
+	0x60,
 
 	//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
-	pTxData[1] = nLength-2;
+	0x00,
 
 	//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
-	pTxData[2] = 0x21;
-	pTxData[3] = 0x08;
+	0x21,
+	0x08,
 	//Sequence number
-	pTxData[4] = sequenceNumber;
+	0x00,
 	//Target PAN
-	pTxData[5] = AT86RF212B_PAN_ID_7_0;
-	pTxData[6] = AT86RF212B_PAN_ID_15_8;
+	AT86RF212B_PAN_ID_7_0,
+	AT86RF212B_PAN_ID_15_8,
 	//Target ID
-	pTxData[7] = AT86RF212B_SHORT_ADDR_TARGET_7_0;
-	pTxData[8] = AT86RF212B_SHORT_ADDR_TARGET_15_8;
+	AT86RF212B_SHORT_ADDR_TARGET_7_0,
+	AT86RF212B_SHORT_ADDR_TARGET_15_8};
 
-	//Source PAN
-	//pTxData[9] = AT86RF212B_PAN_ID_7_0;
-	//pTxData[10] = AT86RF212B_PAN_ID_15_8;
-	//Source ID
-	//pTxData[11] = AT86RF212B_SHORT_ADDR_7_0;
-	//pTxData[12] = AT86RF212B_SHORT_ADDR_15_8;
+	pTxHeader[1] = nLength+7;
+	pTxHeader[4] = sequenceNumber;
 
-	memcpy(&pTxData[AT86RF212B_DATA_OFFSET], frame, length);
+	AT86RF212B_StartReadAndWriteHAL(pTxHeader, pRxHeader, 9);
 
-	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+	AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
+
+	AT86RF212B_StopReadAndWriteHAL(pTxData, pRxData, nLength);
+
+	AT86RF212B_Delay(AT86RF212B_t7);
+	AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
 
 	sequenceNumber += 1;
 

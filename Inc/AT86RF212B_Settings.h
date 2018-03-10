@@ -52,6 +52,9 @@
 #define AT86RF212B_AACK_FLTR_RES_FT 0x01
 //0 = no pending data 0 ; 1 = pending data
 #define AT86RF212B_AACK_SET_PD		0x00
+//Enables the IRQ pin to be used as a frame buffer indicator during frame buffer reads
+#define	AT86RF212B_RX_BL_CTRL		0x01
+
 //Address Filtering
 #define AT86RF212B_PAN_ID_7_0 		0xCC
 #define AT86RF212B_PAN_ID_15_8 		0xCC

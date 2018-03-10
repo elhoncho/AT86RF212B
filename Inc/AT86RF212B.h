@@ -49,6 +49,9 @@ typedef struct{
 	//Enables reserved frame types to be processed
 	uint8_t AACK_UPLD_RES_FT;
 
+	//Enables the IRQ pin to be used as a frame buffer indicator during frame buffer reads
+	uint8_t RX_BL_CTRL;
+
 
 	//Address Filter
 	uint8_t panId_7_0;
@@ -142,7 +145,7 @@ void AT86RF212B_ID();
 //TODO: Remove this it should be static
 void AT86RF212B_TRX_Reset();
 //TODO: Remove this it should be static
-void AT86RF212B_TxData(uint8_t * frame, uint8_t length);
+void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission);
 //TODO: Remove this it is a tmp function for testing only
 void AT86RF212B_TestSleep();
 //TODO: Remove this it should be static

@@ -91,7 +91,7 @@ static uint8_t loopData[100] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 
 
 static void SendLoop(char *arg1, char *arg2){
 	while(1){
-		AT86RF212B_TxData(loopData, 100);
+		AT86RF212B_TxData(loopData, 100, 0);
 	}
 }
 
@@ -111,7 +111,7 @@ static void SendPhoto(char *arg1, char *arg2){
 		}
 
 		if(i){
-			AT86RF212B_TxData(txData, i);
+			AT86RF212B_TxData(txData, i, 0);
 		}
 	}
 	return;
@@ -134,7 +134,7 @@ static void ReadFrame(char *arg1, char *arg2){
 }
 
 static void WriteFrame(char *arg1, char *arg2){
-	AT86RF212B_TxData((uint8_t*)arg1, strlen(arg1));
+	AT86RF212B_TxData((uint8_t*)arg1, strlen(arg1), 0);
 }
 
 static void TestBit(char *arg1, char *arg2){
