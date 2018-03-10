@@ -9,7 +9,6 @@
 static uint8_t AT86RF212B_Mode = MODE_TERMINAL;
 
 void MainControllerOpen(){
-
 	AT86RF212B_Open();
 
 	switch(AT86RF212B_Mode){
