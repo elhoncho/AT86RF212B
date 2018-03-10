@@ -53,6 +53,7 @@ static volatile uint8_t interupt = 0;
 static uint32_t nextBeaconUpdate = 0;
 static uint8_t beaconFalures;
 static uint8_t ackReceived = 0;
+static uint8_t beaconOn = 1;
 
 //==============================================================================================//
 //                                       Public Functions                                       //
@@ -154,12 +155,14 @@ void AT86RF212B_Main(){
 			break;
 		case PLL_ON:
 			//Send Beacon
-			if(GeneralGetMs() > nextBeaconUpdate){
-				if(logging){
-					LOG(LOG_LVL_DEBUG, "Sending Beacon\r\n");
+			if(beaconOn){
+				if(GeneralGetMs() > nextBeaconUpdate){
+					if(logging){
+						LOG(LOG_LVL_DEBUG, "Sending Beacon\r\n");
+					}
+					AT86RF212B_SendBeacon();
+					nextBeaconUpdate = GeneralGetMs() + BEACON_TX_INTERVAL;
 				}
-				AT86RF212B_SendBeacon();
-				nextBeaconUpdate = GeneralGetMs() + BEACON_TX_INTERVAL;
 			}
 			break;
 		case TX_ARET_ON:
@@ -537,8 +540,8 @@ void AT86RF212B_FrameRead(){
 
 		//Send command to start frame read
 		AT86RF212B_StartReadAndWriteHAL(pTxData, pRxData, 1);
-		//Timeout after two octet periods, as per datasheet
-		uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
+		//Timeout after four octet periods
+		uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*4;
 		uint8_t i = 1;
 		while(i < length){
 			if(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 0){
@@ -549,9 +552,9 @@ void AT86RF212B_FrameRead(){
 			}
 			else if(GeneralGetUs() > timeout){
 				if(logging){
+					ASSERT(0);
 					LOG(LOG_LVL_ERROR, "Frame Read Aborted, timeout\r\n");
 				}
-				ASSERT(0);
 				AT86RF212B_StopReadAndWriteHAL(0, 0, 0);
 				//Enable preamble detector to start receiving again
 				AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
@@ -1539,5 +1542,14 @@ uint32_t AT86RF212B_UsPerOctet(){
 			}
 			return 400;
 			break;
+	}
+}
+
+void AT86RF212B_ToggleBeacon(){
+	if(beaconOn){
+		beaconOn = 0;
+	}
+	else{
+		beaconOn = 1;
 	}
 }
