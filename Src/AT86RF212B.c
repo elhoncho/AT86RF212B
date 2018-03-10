@@ -504,6 +504,8 @@ static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
 }
 
 void AT86RF212B_FrameRead(){
+	//Disable preamble detector to start receiving again
+	AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 	uint8_t length = AT86RF212B_FrameLengthRead();
 	if(length == 0){
 		if(logging){
@@ -1091,11 +1093,6 @@ static uint8_t AT86RF212B_CheckForIRQ(uint8_t desiredIRQ){
 				char tmpStr[40];
 				sprintf(tmpStr, "IRQ checking for Received: 0x%02x\r\n", irqState);
 				LOG(LOG_LVL_INFO, tmpStr);
-			}
-
-			if((irqState & desiredIRQ) == TRX_IRQ_TRX_END){
-				//Disable preamble detector to prevent receiving another frame before the current one is read
-				AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 			}
 			return 1;
 		}
