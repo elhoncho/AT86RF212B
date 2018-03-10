@@ -52,7 +52,7 @@ void RawModeMain(){
 			else if(i == AT86RF212B_MAX_DATA-1){
 				//Buffer not empty
 				//Send current packet length is i+1 because i is at a 0 offset
-				AT86RF212B_TxData(txData, i+1, 0);
+				AT86RF212B_TxData(txData, i+1);
 				//Continue clearing buffer
 				RawModeMain();
 				return;
@@ -61,7 +61,7 @@ void RawModeMain(){
 	}
 
 	if(i){
-		AT86RF212B_TxData(txData, i, 0);
+		AT86RF212B_TxData(txData, i);
 	}
 #if STM32
 	CDC_Enable_USB_Packet();

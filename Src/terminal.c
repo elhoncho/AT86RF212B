@@ -97,7 +97,7 @@ static void ToggleBeacon(char *arg1, char *arg2){
 
 static void SendLoop(char *arg1, char *arg2){
 	while(1){
-		AT86RF212B_TxData(loopData, 100, 0);
+		AT86RF212B_TxData(loopData, 100);
 	}
 }
 
@@ -117,7 +117,7 @@ static void SendPhoto(char *arg1, char *arg2){
 		}
 
 		if(i){
-			AT86RF212B_TxData(txData, i, 0);
+			AT86RF212B_TxData(txData, i);
 		}
 	}
 	return;
@@ -140,7 +140,7 @@ static void ReadFrame(char *arg1, char *arg2){
 }
 
 static void WriteFrame(char *arg1, char *arg2){
-	AT86RF212B_TxData((uint8_t*)arg1, strlen(arg1), 0);
+	AT86RF212B_TxData((uint8_t*)arg1, strlen(arg1));
 }
 
 static void TestBit(char *arg1, char *arg2){

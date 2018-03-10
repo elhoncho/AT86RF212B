@@ -145,7 +145,7 @@ void AT86RF212B_ID();
 //TODO: Remove this it should be static
 void AT86RF212B_TRX_Reset();
 //TODO: Remove this it should be static
-void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission);
+void AT86RF212B_TxData(uint8_t * frame, uint8_t length);
 //TODO: Remove this it is a tmp function for testing only
 void AT86RF212B_TestSleep();
 //TODO: Remove this it should be static

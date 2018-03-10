@@ -353,7 +353,7 @@ static void AT86RF212B_SendBeacon(){
 		}
 }
 //Length is the lengt of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
-void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission){
+void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 	static uint8_t failedTransmissions = 0;
 	static uint8_t sequenceNumber = 0;
 	uint8_t status;
@@ -364,7 +364,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission){
 	UpdateState();
 	if(config.state != PLL_ON){
 		AT86RF212B_PhyStateChange(PLL_ON);
-		AT86RF212B_TxData(frame, length, 0);
+		AT86RF212B_TxData(frame, length);
 	}
 	else if(config.state == PLL_ON){
 		if(length > AT86RF212B_MAX_DATA){
@@ -381,16 +381,8 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission){
 			}
 			return;
 		}
-		//TODO: The speed of transmission can be improved by not waiting for all the data to be written before starting the TX phase
-		if(retransmission){
-			//TODO: Will an ACK overwrite the header part of this
-			AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
-			AT86RF212B_Delay(AT86RF212B_t7);
-			AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
-		}
-		else{
-			AT86RF212B_FrameWrite(frame, length, sequenceNumber);
-		}
+
+		AT86RF212B_FrameWrite(frame, length, sequenceNumber);
 
 		if(logging){
 			sprintf(tmpStr, "---------------------\r\nTime to buffer: %i\r\n", GeneralGetMs() - startTime);
@@ -435,7 +427,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t retransmission){
 				}
 
 				failedTransmissions++;
-				AT86RF212B_TxData(frame, length, 1);
+				AT86RF212B_TxData(frame, length);
 //			}
 //			else{
 //				if(logging){
@@ -568,7 +560,7 @@ void AT86RF212B_FrameRead(){
 			}
 		}
 		//Read the last three status bytes and end the frame read
-		AT86RF212B_StartReadAndWriteHAL(&pTxData[length], &pRxData[length], 3);
+		AT86RF212B_StopReadAndWriteHAL(&pTxData[length], &pRxData[length], 3);
 
 
 		//TODO: What happens if the IRQ that started this function includes the TRX_END? This will lock here, or miss frames
