@@ -132,11 +132,15 @@ void AT86RF212B_Main(){
 		case P_ON:
 			break;
 		case TRX_OFF:
-			AT86RF212B_PhyStateChange(RX_ON);
+			AT86RF212B_PhyStateChange(RX_AACK_ON);
 			break;
 		case SLEEP:
 			break;
 		case RX_ON:
+			break;
+		case PLL_ON:
+			break;
+		case RX_AACK_ON:
 			//Check for Beacon
 			if(GeneralGetMs() > nextBeaconUpdate){
 				if(logging){
@@ -159,7 +163,7 @@ void AT86RF212B_Main(){
 				//AT86RF212B_FrameRead(1);
 			}
 			break;
-		case PLL_ON:
+		case TX_ARET_ON:
 			//Send Beacon
 			if(beaconOn){
 				if(GeneralGetMs() > nextBeaconUpdate){
@@ -171,37 +175,7 @@ void AT86RF212B_Main(){
 				}
 			}
 			break;
-		case TX_ARET_ON:
-//			//Send Beacon
-//			if(GeneralGetMs() > nextBeaconUpdate){
-//				if(logging){
-//					LOG(LOG_LVL_DEBUG, "Sending Beacon\r\n");
-//				}
-//				AT86RF212B_SendBeacon();
-//				nextBeaconUpdate = GeneralGetMs() + BEACON_TX_INTERVAL;
-//			}
-			break;
 		case BUSY_RX_AACK:
-			break;
-		case RX_AACK_ON:
-//			//Check for Beacon
-//			if(GeneralGetMs() > nextBeaconUpdate){
-//				if(logging){
-//					LOG(LOG_LVL_DEBUG, "Beacon Failed\r\n");
-//				}
-//				beaconFalures++;
-//				nextBeaconUpdate = GeneralGetMs() + 2000;
-//
-//				if(beaconFalures > 9){
-//					MainControllerSetMode(MODE_TERMINAL);
-//					beaconFalures = 0;
-//				}
-//			}
-//			//Careful if you chage this to AMI or the start of RX because you will need to check the FCF. If the FCF is not valid a TRX_END will not be generatedCRC Failed
-//			if(AT86RF212B_CheckForIRQ(TRX_IRQ_TRX_END)){
-//				//AT86RF212B_BitRead(SR_TRAC_STATUS);
-//				AT86RF212B_FrameRead();
-//			}
 			break;
 		case BUSY_TX:
 			break;
@@ -216,7 +190,7 @@ void AT86RF212B_Main(){
 				ASSERT(0);
 				LOG(LOG_LVL_ERROR, "Unknown state, changing to RX_ON\r\n");
 			}
-			AT86RF212B_PhyStateChange(RX_ON);
+			AT86RF212B_PhyStateChange(RX_AACK_ON);
 			break;
 	}
 }
@@ -322,11 +296,11 @@ static void AT86RF212B_SendACK(uint8_t sequenceNumber){
 
 static void AT86RF212B_SendBeacon(){
 	UpdateState();
-		if(config.state != PLL_ON){
-			AT86RF212B_PhyStateChange(PLL_ON);
+		if(config.state != TX_ARET_ON){
+			AT86RF212B_PhyStateChange(TX_ARET_ON);
 			AT86RF212B_SendBeacon();
 		}
-		else if(config.state == PLL_ON){
+		else if(config.state == TX_ARET_ON){
 			//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
 			#if AT86RF212B_TX_CRC
 				uint8_t nLength = 11;
@@ -341,7 +315,7 @@ static void AT86RF212B_SendBeacon(){
 			//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
 			nLength-2,
 			//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
-			0x04,
+			0x00,
 			0x08,
 			//Sequence number
 			0x00,
@@ -370,11 +344,11 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 	uint8_t tmpStr[40];
 
 	UpdateState();
-	if(config.state != PLL_ON){
-		AT86RF212B_PhyStateChange(PLL_ON);
+	if(config.state != TX_ARET_ON){
+		AT86RF212B_PhyStateChange(TX_ARET_ON);
 		AT86RF212B_TxData(frame, length);
 	}
-	else if(config.state == PLL_ON){
+	else if(config.state == TX_ARET_ON){
 		if(length > AT86RF212B_MAX_DATA){
 			if(logging){
 				ASSERT(0);
@@ -506,6 +480,7 @@ static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
 void AT86RF212B_FrameRead(uint8_t fastMode){
 	//Disable preamble detector to start receiving again
 	AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
+
 	uint8_t length = AT86RF212B_FrameLengthRead();
 	if(length == 0){
 		if(logging){
@@ -595,10 +570,10 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 			}
 		}
 
-		//Check if ACK is requested
-		if(pRxData[2] & 0x20){
-			AT86RF212B_SendACK(pRxData[3]);
-		}
+//		//Check if ACK is requested
+//		if(pRxData[2] & 0x20){
+//			AT86RF212B_SendACK(pRxData[3]);
+//		}
 
 		//Check if it is a data frame
 		if((pRxData[2] & 0x07) == 1){
@@ -613,7 +588,7 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 			InterfaceWriteToDataOutputHAL(data, dataLength);
 		}
 		//Check if it is a beacon frame
-		else if((pRxData[2] & 0x07) == 4){
+		else if((pRxData[2] & 0x07) == 0){
 			//Wait twice as long as beacons are being sent out
 			nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 			beaconFalures = 0;

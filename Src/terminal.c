@@ -207,7 +207,7 @@ static void CmdClear(char *arg1, char *arg2){
 //----------------Standard Functions------------------------//
 
 void TerminalOpen(){
-	AT86RF212B_PhyStateChange(PLL_ON);
+	AT86RF212B_PhyStateChange(TX_ARET_ON);
 	//TODO: Get this to run when the terminal is opened
     char tmpStr[MAX_STR_LEN];
     strcpy(tmpStr, "\033[2J\033[;H");
