@@ -530,8 +530,8 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 		//Length received is the length of the data plus two bytes for the command and PRI bytes
 		//add 3 to the length for the ED LQI and RX_STATUS bytes
 		uint8_t nLength = length+3;
-		uint8_t pTxData[nLength];
-		uint8_t pRxData[nLength];
+		static uint8_t pTxData[nLength];
+		static uint8_t pRxData[nLength];
 
 		pTxData[0] = 0x20;
 
@@ -566,7 +566,9 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 			//Read the last three status bytes and end the frame read
 			AT86RF212B_StopReadAndWriteHAL(&pTxData[length], &pRxData[length], 3);
 
-
+			if(logging){
+				LOG(LOG_LVL_DEBUG, "Fast Mode Done\r\n");
+			}
 			//TODO: What happens if the IRQ that started this function includes the TRX_END? This will lock here, or miss frames
 			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
 		}
