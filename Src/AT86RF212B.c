@@ -540,7 +540,7 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 
 		pTxData[0] = 0x20;
 
-		if(fastMode){
+		if(fastMode == 1){
 			//Send command to start frame read
 			AT86RF212B_StartReadAndWriteHAL(pTxData, pRxData, 1);
 			//Timeout after four octet periods
