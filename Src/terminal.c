@@ -309,6 +309,7 @@ void TerminalWrite(uint8_t *txStr){
 }
 
 void TerminalMain(){
+	InterfaceReadInput();
     TerminalRead();
 #if STM32
     //TODO: Probably not the best place for this function (allows for the USB to start receiving again)
