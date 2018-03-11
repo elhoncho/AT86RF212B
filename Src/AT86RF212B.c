@@ -156,7 +156,7 @@ void AT86RF212B_Main(){
 				AT86RF212B_FrameRead(0);
 			}
 			else if(irqState & (TRX_IRQ_RX_START)){
-				AT86RF212B_FrameRead(1);
+				//AT86RF212B_FrameRead(1);
 			}
 			break;
 		case PLL_ON:
