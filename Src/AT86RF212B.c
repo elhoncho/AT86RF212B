@@ -524,7 +524,7 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 		AT86RF212B_StartReadAndWriteHAL(pTxData, pRxData, 2);
 
 		uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
-		uint8_t i = 1;
+		uint8_t i = 2;
 		while(i < length){
 			if(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 0){
 				AT86RF212B_ContinueReadAndWriteHAL(&pTxData[i], &pRxData[i], 1);
