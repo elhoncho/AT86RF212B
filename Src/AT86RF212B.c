@@ -40,7 +40,7 @@ static void 	AT86RF212B_SendBeacon();
 static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
 //static void 	AT86RF212B_SendACK(uint8_t sequenceNumber);
 //static uint8_t 	AT86RF212B_WaitForACK(uint8_t sequenceNumber);
-//static uint32_t AT86RF212B_UsPerOctet();
+static uint32_t AT86RF212B_UsPerOctet();
 
 
 
@@ -515,25 +515,16 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 	if(fastMode == 1){
 		//Timeout after four octet periods
 		//uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*4;
-		uint32_t timeout = GeneralGetMs() + 10;
-		uint8_t i = 1;
-//		while(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 1){
-//			if(GeneralGetMs() > timeout){
-//				if(logging){
-//					ASSERT(0);
-//					LOG(LOG_LVL_ERROR, "Timeout before reading length\r\n");
-//				}
-//				//Enable preamble detector to start receiving again
-//				AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-//				return;
-//			}
-//		}
+
+
 
 		length = AT86RF212B_FrameLengthRead();
 
 		//Send command to start frame read, send command and read PHR
 		AT86RF212B_StartReadAndWriteHAL(pTxData, pRxData, 2);
 
+		uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
+		uint8_t i = 1;
 		while(i < length){
 			if(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 0){
 				AT86RF212B_ContinueReadAndWriteHAL(&pTxData[i], &pRxData[i], 1);
@@ -541,23 +532,29 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 
 				//750 ns is needed to make sure that the IRQ pin is valid
 				GeneralDelayUs(1);
-				timeout = GeneralGetMs() + 10;
+				timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
 			}
 			else if(GeneralGetMs() > timeout){
-				if(logging){
-					uint8_t tmpStr[30];
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Timeout while reading frame\r\n");
-					AT86RF212B_UpdateIRQ();
-					sprintf(tmpStr, "Read %i bytes\r\nIRQ = %02X\r\n", i, irqState);
-					LOG(LOG_LVL_ERROR, tmpStr);
 
-
+				AT86RF212B_UpdateIRQ();
+				if(irqState & TRX_IRQ_TRX_END){
+					//Finish reading data
+					AT86RF212B_ContinueReadAndWriteHAL(&pTxData[i], &pRxData[i], length-i);
+					break;
 				}
-				AT86RF212B_StopReadAndWriteHAL(0, 0, 0);
-				//Enable preamble detector to start receiving again
-				AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-				return;
+				else{
+					if(logging){
+						uint8_t tmpStr[30];
+						ASSERT(0);
+						LOG(LOG_LVL_ERROR, "Timeout while reading frame\r\n");
+						sprintf(tmpStr, "Read %i bytes\r\nIRQ = %02X\r\n", i, irqState);
+						LOG(LOG_LVL_ERROR, tmpStr);
+					}
+					AT86RF212B_StopReadAndWriteHAL(0, 0, 0);
+					//Enable preamble detector to start receiving again
+					AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+					return;
+				}
 			}
 		}
 		//Read the last three status bytes and end the frame read
@@ -1517,41 +1514,41 @@ static void AT86RF212B_Delay(uint8_t time){
 	return;
 }
 
-//uint32_t AT86RF212B_UsPerOctet(){
-//	switch(config.phyMode){
-//		case AT86RF212B_BPSK_20:
-//			return 400;
-//			break;
-//		case AT86RF212B_BPSK_40:
-//			return 200;
-//			break;
-//		case AT86RF212B_O_QPSK_100:
-//			return 80;
-//			break;
-//		case AT86RF212B_O_QPSK_200:
-//			return 40;
-//			break;
-//		case AT86RF212B_O_QPSK_400:
-//			return 20;
-//			break;
-//		case AT86RF212B_O_QPSK_250:
-//			return 32;
-//			break;
-//		case AT86RF212B_O_QPSK_500:
-//			return 16;
-//			break;
-//		case AT86RF212B_O_QPSK_1000:
-//			return 8;
-//			break;
-//		default:
-//			if(logging){
-//				ASSERT(0);
-//				LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
-//			}
-//			return 400;
-//			break;
-//	}
-//}
+uint32_t AT86RF212B_UsPerOctet(){
+	switch(config.phyMode){
+		case AT86RF212B_BPSK_20:
+			return 400;
+			break;
+		case AT86RF212B_BPSK_40:
+			return 200;
+			break;
+		case AT86RF212B_O_QPSK_100:
+			return 80;
+			break;
+		case AT86RF212B_O_QPSK_200:
+			return 40;
+			break;
+		case AT86RF212B_O_QPSK_400:
+			return 20;
+			break;
+		case AT86RF212B_O_QPSK_250:
+			return 32;
+			break;
+		case AT86RF212B_O_QPSK_500:
+			return 16;
+			break;
+		case AT86RF212B_O_QPSK_1000:
+			return 8;
+			break;
+		default:
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+			}
+			return 400;
+			break;
+	}
+}
 
 void AT86RF212B_ToggleBeacon(){
 	if(beaconOn){
