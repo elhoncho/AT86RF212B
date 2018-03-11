@@ -498,6 +498,9 @@ static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
 }
 
 void AT86RF212B_FrameRead(uint8_t fastMode){
+	static uint8_t pTxData[150];
+	static uint8_t pRxData[150];
+
 	//Disable preamble detector to start receiving again
 	AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 
@@ -530,8 +533,7 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 		//Length received is the length of the data plus two bytes for the command and PRI bytes
 		//add 3 to the length for the ED LQI and RX_STATUS bytes
 		uint8_t nLength = length+3;
-		static uint8_t pTxData[150];
-		static uint8_t pRxData[150];
+
 
 		pTxData[0] = 0x20;
 
