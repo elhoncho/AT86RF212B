@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "generalHAL.h"
 #include "AT86RF212B.h"
 #include "interfaceHAL.h"
@@ -37,9 +38,9 @@ static void 	AT86RF212B_WrongStateError();
 static void 	AT86RF212B_SetRegisters();
 static void 	AT86RF212B_SendBeacon();
 static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
-static void 	AT86RF212B_SendACK(uint8_t sequenceNumber);
-static uint8_t 	AT86RF212B_WaitForACK(uint8_t sequenceNumber);
-static uint32_t AT86RF212B_UsPerOctet();
+//static void 	AT86RF212B_SendACK(uint8_t sequenceNumber);
+//static uint8_t 	AT86RF212B_WaitForACK(uint8_t sequenceNumber);
+//static uint32_t AT86RF212B_UsPerOctet();
 
 
 
@@ -221,77 +222,77 @@ uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
 
 	return pRxData[1];
 }
-static uint8_t AT86RF212B_WaitForACK(uint8_t sequenceNumber){
-	//TODO: What happens when timer rolls
-	uint32_t timeout = GeneralGetMs() + 10;
-	ackReceived = 0;
-	AT86RF212B_PhyStateChange(RX_ON);
-	while(ackReceived == 0){
-		if(GeneralGetMs() > timeout){
-			if(logging){
-				LOG(LOG_LVL_DEBUG, "Timeout waiting for ACK\r\n");
-			}
-			AT86RF212B_PhyStateChange(PLL_ON);
-			return 0;
-		}
-
-		AT86RF212B_UpdateIRQ();
-		if(irqState & TRX_IRQ_TRX_END){
-			AT86RF212B_FrameRead(0);
-		}
-	}
-	AT86RF212B_PhyStateChange(PLL_ON);
-	return 1;
-}
-static void AT86RF212B_SendACK(uint8_t sequenceNumber){
-	UpdateState();
-	if(config.state != PLL_ON){
-		AT86RF212B_PhyStateChange(PLL_ON);
-		AT86RF212B_SendACK(sequenceNumber);
-	}
-	else if(config.state == PLL_ON){
-		if(logging){
-			LOG(LOG_LVL_DEBUG, "Sending ACK\r\n");
-		}
-
-		//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
-		#if AT86RF212B_TX_CRC
-			uint8_t nLength = 11;
-		#else
-			uint8_t nLength = 9;
-		#endif
-
-		uint8_t pRxData[nLength];
-
-		//Frame write command
-		uint8_t pTxData[11] = {0x60,
-		//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
-		nLength-2,
-		//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
-		0x02,
-		0x08,
-		//Sequence number
-		sequenceNumber,
-		//Target PAN
-		AT86RF212B_PAN_ID_7_0,
-		AT86RF212B_PAN_ID_15_8,
-		//Target ID
-		AT86RF212B_SHORT_ADDR_TARGET_7_0,
-		AT86RF212B_SHORT_ADDR_TARGET_15_8};
-
-
-		GeneralDelayUs(200);
-
-		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
-
-		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
-		AT86RF212B_Delay(AT86RF212B_t7);
-		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
-		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-
-		AT86RF212B_PhyStateChange(RX_ON);
-	}
-}
+//static uint8_t AT86RF212B_WaitForACK(uint8_t sequenceNumber){
+//	//TODO: What happens when timer rolls
+//	uint32_t timeout = GeneralGetMs() + 10;
+//	ackReceived = 0;
+//	AT86RF212B_PhyStateChange(RX_ON);
+//	while(ackReceived == 0){
+//		if(GeneralGetMs() > timeout){
+//			if(logging){
+//				LOG(LOG_LVL_DEBUG, "Timeout waiting for ACK\r\n");
+//			}
+//			AT86RF212B_PhyStateChange(PLL_ON);
+//			return 0;
+//		}
+//
+//		AT86RF212B_UpdateIRQ();
+//		if(irqState & TRX_IRQ_TRX_END){
+//			AT86RF212B_FrameRead(0);
+//		}
+//	}
+//	AT86RF212B_PhyStateChange(PLL_ON);
+//	return 1;
+//}
+//static void AT86RF212B_SendACK(uint8_t sequenceNumber){
+//	UpdateState();
+//	if(config.state != PLL_ON){
+//		AT86RF212B_PhyStateChange(PLL_ON);
+//		AT86RF212B_SendACK(sequenceNumber);
+//	}
+//	else if(config.state == PLL_ON){
+//		if(logging){
+//			LOG(LOG_LVL_DEBUG, "Sending ACK\r\n");
+//		}
+//
+//		//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
+//		#if AT86RF212B_TX_CRC
+//			uint8_t nLength = 11;
+//		#else
+//			uint8_t nLength = 9;
+//		#endif
+//
+//		uint8_t pRxData[nLength];
+//
+//		//Frame write command
+//		uint8_t pTxData[11] = {0x60,
+//		//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
+//		nLength-2,
+//		//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
+//		0x02,
+//		0x08,
+//		//Sequence number
+//		sequenceNumber,
+//		//Target PAN
+//		AT86RF212B_PAN_ID_7_0,
+//		AT86RF212B_PAN_ID_15_8,
+//		//Target ID
+//		AT86RF212B_SHORT_ADDR_TARGET_7_0,
+//		AT86RF212B_SHORT_ADDR_TARGET_15_8};
+//
+//
+//		GeneralDelayUs(200);
+//
+//		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+//
+//		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
+//		AT86RF212B_Delay(AT86RF212B_t7);
+//		AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
+//		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+//
+//		AT86RF212B_PhyStateChange(RX_ON);
+//	}
+//}
 
 static void AT86RF212B_SendBeacon(){
 	UpdateState();
@@ -337,12 +338,12 @@ static void AT86RF212B_SendBeacon(){
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 	static uint8_t failedTransmissions = 0;
 	static uint8_t sequenceNumber = 0;
-	uint8_t status;
+	static uint8_t* tmpStr[40];
 
 	uint32_t startTime = GeneralGetMs();
-	uint8_t tmpStr[40];
 
 	UpdateState();
+
 	if(config.state != TX_ARET_ON){
 		AT86RF212B_PhyStateChange(TX_ARET_ON);
 		AT86RF212B_TxData(frame, length);
@@ -366,19 +367,19 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 		AT86RF212B_FrameWrite(frame, length, sequenceNumber);
 
 		if(logging){
-			sprintf(tmpStr, "---------------------\r\nTime to buffer: %i\r\n", GeneralGetMs() - startTime);
-			LOG(LOG_LVL_ERROR, tmpStr);
+			sprintf((char*)tmpStr, "---------------------\r\nTime to buffer: %lu\r\n", GeneralGetMs() - startTime);
+			LOG(LOG_LVL_ERROR, (char*)tmpStr);
 			startTime = GeneralGetMs();
 		}
 
 
-		//Wait untill done transmitting data
+		//Wait until done transmitting data
 		//TODO: This may affect speed
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
 
 		if(logging){
-			sprintf(tmpStr, "Time to end of tx: %i\r\n", GeneralGetMs() - startTime);
-			LOG(LOG_LVL_ERROR, tmpStr);
+			sprintf((char*)tmpStr, "Time to end of tx: %lu\r\n", GeneralGetMs() - startTime);
+			LOG(LOG_LVL_ERROR, (char*)tmpStr);
 			startTime = GeneralGetMs();
 		}
 
@@ -435,6 +436,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 				AT86RF212B_TxData(frame, length);
 				break;
 		}
+		return;
 	}
 	else{
 		if(logging){
@@ -551,8 +553,8 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 					if(logging){
 						uint8_t tmpStr[20];
 						ASSERT(0);
-						sprintf(tmpStr, "Frames Read: %i\r\n", i);
-						LOG(LOG_LVL_ERROR, tmpStr);
+						sprintf((char*)tmpStr, "Frames Read: %i\r\n", i);
+						LOG(LOG_LVL_ERROR, (char*)tmpStr);
 						LOG(LOG_LVL_ERROR, "Frame Read Aborted, timeout\r\n");
 					}
 					AT86RF212B_StopReadAndWriteHAL(0, 0, 0);
@@ -587,11 +589,6 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 				}
 			}
 		}
-
-//		//Check if ACK is requested
-//		if(pRxData[2] & 0x20){
-//			AT86RF212B_SendACK(pRxData[3]);
-//		}
 
 		//Check if it is a data frame
 		if((pRxData[2] & 0x07) == 1){
@@ -1494,41 +1491,41 @@ static void AT86RF212B_Delay(uint8_t time){
 	return;
 }
 
-uint32_t AT86RF212B_UsPerOctet(){
-	switch(config.phyMode){
-		case AT86RF212B_BPSK_20:
-			return 400;
-			break;
-		case AT86RF212B_BPSK_40:
-			return 200;
-			break;
-		case AT86RF212B_O_QPSK_100:
-			return 80;
-			break;
-		case AT86RF212B_O_QPSK_200:
-			return 40;
-			break;
-		case AT86RF212B_O_QPSK_400:
-			return 20;
-			break;
-		case AT86RF212B_O_QPSK_250:
-			return 32;
-			break;
-		case AT86RF212B_O_QPSK_500:
-			return 16;
-			break;
-		case AT86RF212B_O_QPSK_1000:
-			return 8;
-			break;
-		default:
-			if(logging){
-				ASSERT(0);
-				LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
-			}
-			return 400;
-			break;
-	}
-}
+//uint32_t AT86RF212B_UsPerOctet(){
+//	switch(config.phyMode){
+//		case AT86RF212B_BPSK_20:
+//			return 400;
+//			break;
+//		case AT86RF212B_BPSK_40:
+//			return 200;
+//			break;
+//		case AT86RF212B_O_QPSK_100:
+//			return 80;
+//			break;
+//		case AT86RF212B_O_QPSK_200:
+//			return 40;
+//			break;
+//		case AT86RF212B_O_QPSK_400:
+//			return 20;
+//			break;
+//		case AT86RF212B_O_QPSK_250:
+//			return 32;
+//			break;
+//		case AT86RF212B_O_QPSK_500:
+//			return 16;
+//			break;
+//		case AT86RF212B_O_QPSK_1000:
+//			return 8;
+//			break;
+//		default:
+//			if(logging){
+//				ASSERT(0);
+//				LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
+//			}
+//			return 400;
+//			break;
+//	}
+//}
 
 void AT86RF212B_ToggleBeacon(){
 	if(beaconOn){
