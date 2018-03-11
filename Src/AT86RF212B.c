@@ -534,7 +534,7 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 				GeneralDelayUs(1);
 				timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
 			}
-			else if(GeneralGetMs() > timeout){
+			else if(GeneralGetUs() > timeout){
 
 				AT86RF212B_UpdateIRQ();
 				if(irqState & TRX_IRQ_TRX_END){
