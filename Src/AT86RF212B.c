@@ -517,17 +517,17 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 		//uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*4;
 		uint32_t timeout = GeneralGetMs() + 10;
 		uint8_t i = 1;
-		while(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 1){
-			if(GeneralGetMs() > timeout){
-				if(logging){
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Timeout before reading length\r\n");
-				}
-				//Enable preamble detector to start receiving again
-				AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-				return;
-			}
-		}
+//		while(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 1){
+//			if(GeneralGetMs() > timeout){
+//				if(logging){
+//					ASSERT(0);
+//					LOG(LOG_LVL_ERROR, "Timeout before reading length\r\n");
+//				}
+//				//Enable preamble detector to start receiving again
+//				AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+//				return;
+//			}
+//		}
 
 		length = AT86RF212B_FrameLengthRead();
 
