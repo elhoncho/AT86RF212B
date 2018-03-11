@@ -270,9 +270,10 @@ void AT86RF212B_StopReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16
 #if RASPBERRY_PI
 	if(size > 0){
 		wiringPiSPIDataRW(SPI_CHANNEL, pTxData, size);
+		digitalWrite(SPI_NSS_PIN, HIGH);
+		memcpy(pRxData, pTxData, size);
 	}
 	digitalWrite(SPI_NSS_PIN, HIGH);
-	memcpy(pRxData, pTxData, size);
 #endif
 
 #if STM32
