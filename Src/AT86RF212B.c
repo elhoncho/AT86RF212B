@@ -45,7 +45,6 @@ static uint32_t AT86RF212B_UsPerOctet();
 
 //-----------External Variables--------------------//
 extern uint8_t logging;
-extern uint8_t AT86RF212B_Mode;
 
 //------------Private Global Variables----------------//
 static AT86RF212B_Config config;

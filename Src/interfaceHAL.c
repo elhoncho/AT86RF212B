@@ -8,8 +8,10 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "terminal.h"
 #include "AT86RF212B_Settings.h"
+#include "interfaceHAL.h"
 
 #if STM32
 #include "usb_device.h"
@@ -45,6 +47,19 @@ static uint8_t popFromBuffer(circleBuffer *b, uint8_t *outChar);
 
 void SetEchoInput(uint8_t condition){
 	echoInput = condition;
+}
+
+void InterfaceReadInput(){
+#if RASPBERRY_PI
+	char inChar;
+	if(read(0, &inChar, 1) > 0){
+		InterfacePushToInputBufferHAL(inChar);
+	}
+#endif
+
+#if STM32
+	CDC_Enable_USB_Packet();
+#endif
 }
 
 void InterfaceWriteToDataOutputHAL(uint8_t * pTxData, uint32_t length){

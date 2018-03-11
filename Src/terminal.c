@@ -38,7 +38,6 @@
 //TODO:Globle variables!...probably need to find a better way to do this
 uint8_t volatile newCmd = 0;
 extern uint8_t logging;
-extern uint8_t AT86RF212B_Mode;
 
 struct commandStruct{
     const char *name;

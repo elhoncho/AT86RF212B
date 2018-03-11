@@ -30,6 +30,7 @@ void RawModeOpen(){
 
 
 void RawModeMain(){
+	InterfaceReadInput();
 	static uint8_t txData[AT86RF212B_MAX_DATA];
 	uint8_t i;
 	uint8_t tmpChar;
@@ -63,8 +64,6 @@ void RawModeMain(){
 	if(i){
 		AT86RF212B_TxData(txData, i);
 	}
-#if STM32
-	CDC_Enable_USB_Packet();
-#endif
+
 	return;
 }
