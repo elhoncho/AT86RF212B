@@ -545,8 +545,11 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 			}
 			else if(GeneralGetMs() > timeout){
 				if(logging){
+					uint8_t tmpStr[15];
 					ASSERT(0);
 					LOG(LOG_LVL_ERROR, "Timeout while reading frame\r\n");
+					sprintf(tmpStr, "Read %i bytes\r\n", i);
+					LOG(LOG_LVL_ERROR, tmpStr);
 				}
 				AT86RF212B_StopReadAndWriteHAL(0, 0, 0);
 				//Enable preamble detector to start receiving again
