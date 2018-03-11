@@ -549,7 +549,7 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 					ASSERT(0);
 					LOG(LOG_LVL_ERROR, "Timeout while reading frame\r\n");
 					AT86RF212B_UpdateIRQ();
-					sprintf(tmpStr, "Read %i bytes\r\nIRQ = %02X", i, irqState);
+					sprintf(tmpStr, "Read %i bytes\r\nIRQ = %02X\r\n", i, irqState);
 					LOG(LOG_LVL_ERROR, tmpStr);
 
 
