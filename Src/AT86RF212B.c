@@ -382,39 +382,58 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 			startTime = GeneralGetMs();
 		}
 
-		if(AT86RF212B_WaitForACK(sequenceNumber)){
-			if(logging){
-				LOG(LOG_LVL_INFO, "Frame TX Success\r\n");
-			}
-			sequenceNumber++;
-			failedTransmissions = 0;
+		uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
 
-			if(logging){
-				sprintf(tmpStr, "Time to ACK: %i\r\n", GeneralGetMs() - startTime);
-				LOG(LOG_LVL_ERROR, tmpStr);
-				startTime = GeneralGetMs();
-			}
-		}
-		else{
-			//if(failedTransmissions < 10){
+		switch(txStatus){
+			case TRAC_SUCCESS:
 				if(logging){
-					LOG(LOG_LVL_DEBUG, "No ACK on frame, retransmitting\r\n");
+					LOG(LOG_LVL_DEBUG, "Frame TX Success\r\n");
 				}
 
+				sequenceNumber++;
+				failedTransmissions = 0;
+				break;
+			case TRAC_SUCCESS_DATA_PENDING:
 				if(logging){
-					sprintf(tmpStr, "Time to failed: %i\r\n", GeneralGetMs() - startTime);
-					LOG(LOG_LVL_ERROR, tmpStr);
-					startTime = GeneralGetMs();
+					LOG(LOG_LVL_DEBUG, "Frame TX Success with data pending\r\n");
+				}
+
+				sequenceNumber++;
+				failedTransmissions = 0;
+				break;
+			case TRAC_CHANNEL_ACCESS_FAILURE:
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "Frame Tx Fail! Channel Access Failure\r\n");
 				}
 
 				failedTransmissions++;
 				AT86RF212B_TxData(frame, length);
-//			}
-//			else{
-//				if(logging){
-//					LOG(LOG_LVL_ERROR, "Too many transmissions, dropping frame!\r\n");
-//				}
-//			}
+				break;
+			case TRAC_NO_ACK:
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "Frame TX Fail! No ACK received\r\n");
+				}
+
+				failedTransmissions++;
+				AT86RF212B_TxData(frame, length);
+				break;
+			case TRAC_INVALID:
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "Frame TX Fail! Invalid Frame\r\n");
+				}
+
+				failedTransmissions++;
+				AT86RF212B_TxData(frame, length);
+				break;
+			default:
+				if(logging){
+					ASSERT(0);
+					LOG(LOG_LVL_ERROR, "Frame Tx Fail! Invalid TX State!\r\n");
+				}
+
+				failedTransmissions++;
+				AT86RF212B_TxData(frame, length);
+				break;
 		}
 	}
 	else{
