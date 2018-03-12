@@ -444,119 +444,114 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 	pTxData[0] = 0x20;
 
 	//Disable preamble detector to start receiving again
-	//AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
+	AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 
 
-//	if(fastMode == 1){
-//		//Timeout after four octet periods
-//		//uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*4;
-//
-//
-//
-//		length = AT86RF212B_FrameLengthRead();
-//
-//		if(length == 0){
-//			if(logging){
-//				ASSERT(0);
-//				LOG(LOG_LVL_ERROR, "No data on frame\r\n");
-//			}
-//			//Enable preamble detector to start receiving again
-//			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-//			return;
-//		}
-//		else if(length > 127){
-//			if(logging){
-//				ASSERT(0);
-//				LOG(LOG_LVL_ERROR, "Frame too large\r\n");
-//			}
-//			//Enable preamble detector to start receiving again
-//			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-//			return;
-//		}
-//		else{
-//			if(logging){
-//				char tmpStr[20];
-//				sprintf(tmpStr, "Reading frame of size %i\r\n", length);
-//				LOG(LOG_LVL_DEBUG, tmpStr);
-//			}
-//
-//			AT86RF212B_StartReadAndWriteHAL(0,0,0);
-//
-//			uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
-//			uint8_t i = 0;
-//			while(i < length+3){
-//				if(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 0){
-//					AT86RF212B_ContinueReadAndWriteHAL(&pTxData[i], &pRxData[i], 1);
-//					i++;
-//
-//					//750 ns is needed to make sure that the IRQ pin is valid
-//					GeneralDelayUs(1);
-//					timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
-//				}
-//				else if(GeneralGetUs() > timeout){
-//					//Read the rest of the frame and check to see if its valid
-//					AT86RF212B_StopReadAndWriteHAL(&pTxData[i], &pRxData[i], length-i+3);
-//
-//					AT86RF212B_UpdateIRQ();
-//					if(irqState & TRX_IRQ_TRX_END){
-//						if(logging){
-//							LOG(LOG_LVL_ERROR, "Finishing Reading Data\r\n");
-//						}
-//						break;
-//					}
-//					else{
-//						if(logging){
-//							ASSERT(0);
-//							LOG(LOG_LVL_ERROR, "Error while reading frame\r\n");
-//							uint8_t tmpStr[20];
-//							sprintf(tmpStr, "IRQ Was %i\r\n", irqState);
-//						}
-//						AT86RF212B_StopReadAndWriteHAL(0,0,0);
-//						//Enable preamble detector to start receiving again
-//						AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-//						return;
-//					}
-//				}
-//			}
-//			//Read the last three status bytes and end the frame read
-//			AT86RF212B_StopReadAndWriteHAL(0,0,0);
-//
-//			if(logging){
-//				LOG(LOG_LVL_DEBUG, "Fast Mode Done\r\n");
-//			}
-//		}
-//	}
-//	else{
-	length = AT86RF212B_FrameLengthRead();
+	if(fastMode == 1){
+		length = AT86RF212B_FrameLengthRead();
 
-	if(length == 0){
-		if(logging){
-			ASSERT(0);
-			LOG(LOG_LVL_ERROR, "No data on frame\r\n");
+		if(length == 0){
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, "No data on frame\r\n");
+			}
+			//Enable preamble detector to start receiving again
+			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+			return;
 		}
-		//Enable preamble detector to start receiving again
-		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-		return;
-	}
-	else if(length > 127){
-		if(logging){
-			ASSERT(0);
-			LOG(LOG_LVL_ERROR, "Frame too large\r\n");
+		else if(length > 127){
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, "Frame too large\r\n");
+			}
+			//Enable preamble detector to start receiving again
+			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+			return;
 		}
-		//Enable preamble detector to start receiving again
-		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-		return;
+		else{
+			if(logging){
+				char tmpStr[20];
+				sprintf(tmpStr, "Reading frame of size %i\r\n", length);
+				LOG(LOG_LVL_DEBUG, tmpStr);
+			}
+
+			AT86RF212B_StartReadAndWriteHAL(0,0,0);
+
+			uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
+			uint8_t i = 0;
+			while(i < length+3){
+				if(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 0){
+					AT86RF212B_ContinueReadAndWriteHAL(&pTxData[i], &pRxData[i], 1);
+					i++;
+
+					//750 ns is needed to make sure that the IRQ pin is valid
+					GeneralDelayUs(1);
+					timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
+				}
+				else if(GeneralGetUs() > timeout){
+					//Read the rest of the frame and check to see if its valid
+					AT86RF212B_StopReadAndWriteHAL(&pTxData[i], &pRxData[i], length-i+3);
+
+					AT86RF212B_UpdateIRQ();
+					if(irqState & TRX_IRQ_TRX_END){
+						if(logging){
+							LOG(LOG_LVL_ERROR, "Finishing Reading Data\r\n");
+						}
+						break;
+					}
+					else{
+						if(logging){
+							ASSERT(0);
+							LOG(LOG_LVL_ERROR, "Error while reading frame\r\n");
+							uint8_t tmpStr[20];
+							sprintf(tmpStr, "IRQ Was %i\r\n", irqState);
+						}
+						AT86RF212B_StopReadAndWriteHAL(0,0,0);
+						//Enable preamble detector to start receiving again
+						AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+						return;
+					}
+				}
+			}
+			//Read the last three status bytes and end the frame read
+			AT86RF212B_StopReadAndWriteHAL(0,0,0);
+
+			if(logging){
+				LOG(LOG_LVL_DEBUG, "Fast Mode Done\r\n");
+			}
+		}
 	}
 	else{
-		if(logging){
-			char tmpStr[20];
-			sprintf(tmpStr, "Reading frame of size %i\r\n", length);
-			LOG(LOG_LVL_DEBUG, tmpStr);
-		}
+		length = AT86RF212B_FrameLengthRead();
 
-		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+3);
+		if(length == 0){
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, "No data on frame\r\n");
+			}
+			//Enable preamble detector to start receiving again
+			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+			return;
+		}
+		else if(length > 127){
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, "Frame too large\r\n");
+			}
+			//Enable preamble detector to start receiving again
+			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+			return;
+		}
+		else{
+			if(logging){
+				char tmpStr[20];
+				sprintf(tmpStr, "Reading frame of size %i\r\n", length);
+				LOG(LOG_LVL_DEBUG, tmpStr);
+			}
+
+			AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+3);
+		}
 	}
-//	}
 
 	if(config.txCrc){
 		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
