@@ -555,7 +555,7 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 				}
 				else if(GeneralGetUs() > timeout){
 					//Read the rest of the frame and check to see if its valid
-					AT86RF212B_StopReadAndWriteHAL(pTxData[i], &pRxData[i], length-i+3);
+					AT86RF212B_StopReadAndWriteHAL(&pTxData[i], &pRxData[i], length-i+3);
 
 					AT86RF212B_UpdateIRQ();
 					if(irqState & TRX_IRQ_TRX_END){
