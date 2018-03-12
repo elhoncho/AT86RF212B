@@ -507,10 +507,6 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 	AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 
 
-	//Length received is the length of the data plus two bytes for the command and PRI bytes
-	//add 3 to the length for the ED LQI and RX_STATUS bytes
-	uint8_t nLength = length+3;
-
 	if(fastMode == 1){
 		//Timeout after four octet periods
 		//uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*4;
@@ -548,7 +544,7 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 
 			uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
 			uint8_t i = 0;
-			while(i < length){
+			while(i < length+3){
 				if(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 0){
 					AT86RF212B_ContinueReadAndWriteHAL(&pTxData[i], &pRxData[i], 1);
 					i++;
@@ -558,22 +554,29 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 					timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
 				}
 				else if(GeneralGetUs() > timeout){
+					//Read the rest of the frame and check to see if its valid
+					AT86RF212B_StopReadAndWriteHAL(pTxData[i], &pRxData[i], length-i+3);
 
 					AT86RF212B_UpdateIRQ();
 					if(irqState & TRX_IRQ_TRX_END){
-						//Finish reading data
-						AT86RF212B_ContinueReadAndWriteHAL(&pTxData[i], &pRxData[i], length-i);
+						if(logging){
+							LOG(LOG_LVL_ERROR, "Finishing Reading Data\r\n");
+						}
 						break;
+//						if(i == 0){
+//							AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+3);
+//							break;
+//						}
+//						//Finish reading data via SRAM access
+//						pTxData[0] = 0x00;
+//						AT86RF212B_ReadAndWriteHAL(pTxData, &pRxData[i], length-i);
+//						break;
 					}
 					else{
 						if(logging){
-							uint8_t tmpStr[30];
 							ASSERT(0);
-							LOG(LOG_LVL_ERROR, "Timeout while reading frame\r\n");
-							sprintf(tmpStr, "Read %i bytes\r\nIRQ = %02X\r\n", i, irqState);
-							LOG(LOG_LVL_ERROR, tmpStr);
+							LOG(LOG_LVL_ERROR, "Error while reading frame\r\n");
 						}
-						AT86RF212B_StopReadAndWriteHAL(0, 0, 0);
 						//Enable preamble detector to start receiving again
 						AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 						return;
@@ -581,17 +584,11 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 				}
 			}
 			//Read the last three status bytes and end the frame read
-			AT86RF212B_StopReadAndWriteHAL(&pTxData[length], &pRxData[length], 3);
+			AT86RF212B_StopReadAndWriteHAL(0,0,0);
 
 			if(logging){
 				LOG(LOG_LVL_DEBUG, "Fast Mode Done\r\n");
 			}
-
-			//If data frame make sure TRX_IRQ_TRX_END is received
-			if((pRxData[2] & 0x07) == 1){
-				AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-			}
-
 		}
 	}
 	else{
@@ -622,7 +619,7 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 				LOG(LOG_LVL_DEBUG, tmpStr);
 			}
 
-			AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
+			AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+3);
 		}
 	}
 
@@ -676,7 +673,7 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 
 	if(logging){
 		LOG(LOG_LVL_INFO, "Data Received\r\n");
-		AT86RF212B_PrintBuffer(nLength, pRxData);
+		AT86RF212B_PrintBuffer(length+3, pRxData);
 	}
 
 	//Enable preamble detector to start receiving again
