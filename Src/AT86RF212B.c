@@ -138,8 +138,41 @@ void AT86RF212B_Main(){
 		case SLEEP:
 			break;
 		case RX_ON:
+			//Check for Beacon
+			if(GeneralGetMs() > nextBeaconUpdate){
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "Beacon Failed\r\n");
+				}
+				beaconFalures++;
+				nextBeaconUpdate = GeneralGetMs() + 2000;
+
+				if(beaconFalures > 9){
+					MainControllerSetMode(MODE_TERMINAL);
+					beaconFalures = 0;
+				}
+			}
+
+			AT86RF212B_UpdateIRQ();
+			if(irqState & (TRX_IRQ_TRX_END)){
+				AT86RF212B_FrameRead(0);
+				nextBeaconUpdate = GeneralGetMs() + 2000;
+			}
+			else if(irqState & (TRX_IRQ_RX_START)){
+				AT86RF212B_FrameRead(1);
+				nextBeaconUpdate = GeneralGetMs() + 2000;
+			}
 			break;
 		case PLL_ON:
+			//Send Beacon
+			if(beaconOn){
+				if(GeneralGetMs() > nextBeaconUpdate){
+					if(logging){
+						LOG(LOG_LVL_DEBUG, "Sending Beacon\r\n");
+					}
+					AT86RF212B_SendBeacon();
+					nextBeaconUpdate = GeneralGetMs() + BEACON_TX_INTERVAL;
+				}
+			}
 			break;
 		case RX_AACK_ON:
 			//Check for Beacon
@@ -162,21 +195,21 @@ void AT86RF212B_Main(){
 				nextBeaconUpdate = GeneralGetMs() + 2000;
 			}
 			else if(irqState & (TRX_IRQ_RX_START)){
-				//AT86RF212B_FrameRead(1);
-				//nextBeaconUpdate = GeneralGetMs() + 2000;
+				AT86RF212B_FrameRead(1);
+				nextBeaconUpdate = GeneralGetMs() + 2000;
 			}
 			break;
 		case TX_ARET_ON:
-			//Send Beacon
-			if(beaconOn){
-				if(GeneralGetMs() > nextBeaconUpdate){
-					if(logging){
-						LOG(LOG_LVL_DEBUG, "Sending Beacon\r\n");
-					}
-					AT86RF212B_SendBeacon();
-					nextBeaconUpdate = GeneralGetMs() + BEACON_TX_INTERVAL;
-				}
-			}
+//			//Send Beacon
+//			if(beaconOn){
+//				if(GeneralGetMs() > nextBeaconUpdate){
+//					if(logging){
+//						LOG(LOG_LVL_DEBUG, "Sending Beacon\r\n");
+//					}
+//					AT86RF212B_SendBeacon();
+//					nextBeaconUpdate = GeneralGetMs() + BEACON_TX_INTERVAL;
+//				}
+//			}
 			break;
 		case BUSY_RX_AACK:
 			break;
