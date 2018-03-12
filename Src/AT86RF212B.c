@@ -503,6 +503,7 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 							uint8_t tmpStr[20];
 							sprintf(tmpStr, "IRQ Was %i\r\n", irqState);
 						}
+						AT86RF212B_StopReadAndWriteHAL(0,0,0);
 						//Enable preamble detector to start receiving again
 						AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 						return;
