@@ -162,8 +162,8 @@ void AT86RF212B_Main(){
 				nextBeaconUpdate = GeneralGetMs() + 2000;
 			}
 			else if(irqState & (TRX_IRQ_RX_START)){
-				AT86RF212B_FrameRead(1);
-				nextBeaconUpdate = GeneralGetMs() + 2000;
+				//AT86RF212B_FrameRead(1);
+				//nextBeaconUpdate = GeneralGetMs() + 2000;
 			}
 			break;
 		case TX_ARET_ON:
