@@ -574,10 +574,10 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 		beaconFalures = 0;
 
 		//length - AT86RF212B_DATA_OFFSET (header bytes)
-		uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
-		uint8_t data[dataLength];
-		memcpy(data, &pRxData[AT86RF212B_DATA_OFFSET], dataLength);
-		InterfaceWriteToDataOutputHAL(data, dataLength);
+		//uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
+		//uint8_t data[dataLength];
+		//memcpy(data, &pRxData[AT86RF212B_DATA_OFFSET], dataLength);
+		InterfaceWriteToDataOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
 	}
 	//Check if it is a beacon frame
 	else if((pRxData[2] & 0x07) == 0){
