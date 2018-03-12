@@ -20,10 +20,10 @@ void RawModeOpen(){
 	SetEchoInput(0);
 	switch(MainControllerGetMode()){
 		case MODE_RAW_RX:
-			AT86RF212B_PhyStateChange(RX_AACK_ON);
+			AT86RF212B_PhyStateChange(RX_ON);
 			break;
 		case MODE_RAW_TX:
-			AT86RF212B_PhyStateChange(TX_ARET_ON);
+			AT86RF212B_PhyStateChange(PLL_ON);
 			break;
 	}
 }
