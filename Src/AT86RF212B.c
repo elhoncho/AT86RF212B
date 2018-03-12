@@ -627,7 +627,7 @@ static void AT86RF212B_FrameWrite(uint8_t * pTxData, uint8_t length, uint8_t seq
 	0x00,
 
 	//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
-	0x21,
+	0x01,
 	0x08,
 	//Sequence number
 	0x00,
