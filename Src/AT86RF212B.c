@@ -572,18 +572,18 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 		//Wait twice as long as beacons are being sent out
 		nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 		beaconFalures = 0;
-
-		//length - AT86RF212B_DATA_OFFSET (header bytes)
-		uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
-		uint8_t data[dataLength];
-		memcpy(data, &pRxData[AT86RF212B_DATA_OFFSET], dataLength);
-		InterfaceWriteToDataOutputHAL(data, dataLength);
 	}
 	//Check if it is a beacon frame
 	else if((pRxData[2] & 0x07) == 0){
 		//Wait twice as long as beacons are being sent out
 		nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 		beaconFalures = 0;
+
+		//length - AT86RF212B_DATA_OFFSET (header bytes)
+		uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
+		uint8_t data[dataLength];
+		memcpy(data, &pRxData[AT86RF212B_DATA_OFFSET], dataLength);
+		InterfaceWriteToDataOutputHAL(data, dataLength);
 	}
 	//Check if it is an ACK
 	else if((pRxData[2] & 0x07) == 2){
@@ -627,7 +627,7 @@ static void AT86RF212B_FrameWrite(uint8_t * pTxData, uint8_t length, uint8_t seq
 	0x00,
 
 	//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
-	0x01,
+	0x00,
 	0x08,
 	//Sequence number
 	0x00,
