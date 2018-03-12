@@ -248,7 +248,7 @@ static void AT86RF212B_SendBeacon(){
 			nLength-2,
 			//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
 			0x00,
-			0x00,
+			0x08,
 			//Sequence number
 			0x00,
 			//Target PAN
