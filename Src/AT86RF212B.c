@@ -53,7 +53,7 @@ static volatile uint8_t interupt = 0;
 static uint32_t nextBeaconUpdate = 0;
 static uint8_t beaconFalures;
 static uint8_t ackReceived = 0;
-static uint8_t beaconOn = 1;
+static uint8_t beaconOn = 0;
 static uint8_t irqState = 0;
 
 //==============================================================================================//
@@ -276,11 +276,11 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 
 	UpdateState();
 
-	if(config.state != TX_ARET_ON){
-		AT86RF212B_PhyStateChange(TX_ARET_ON);
+	if(config.state != PLL_ON){
+		AT86RF212B_PhyStateChange(PLL_ON);
 		AT86RF212B_TxData(frame, length);
 	}
-	else if(config.state == TX_ARET_ON){
+	else if(config.state == PLL_ON){
 		if(length > AT86RF212B_MAX_DATA){
 			if(logging){
 				ASSERT(0);
@@ -294,6 +294,13 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 				LOG(LOG_LVL_ERROR, "No data to send\r\n");
 			}
 			return;
+		}
+		else{
+			if(logging){
+				uint8_t tmpStr[20];
+				sprintf(tmpStr, "Sending %i\r\n", length);
+				LOG(LOG_LVL_ERROR, tmpStr);
+			}
 		}
 
 		AT86RF212B_FrameWrite(frame, length, sequenceNumber);
@@ -315,61 +322,59 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 			startTime = GeneralGetMs();
 		}
 
-		uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
-
-		switch(txStatus){
-			case TRAC_SUCCESS:
-				if(logging){
-					LOG(LOG_LVL_DEBUG, "Frame TX Success\r\n");
-				}
-
-				sequenceNumber++;
-				failedTransmissions = 0;
-				break;
-			case TRAC_SUCCESS_DATA_PENDING:
-				if(logging){
-					LOG(LOG_LVL_DEBUG, "Frame TX Success with data pending\r\n");
-				}
-
-				sequenceNumber++;
-				failedTransmissions = 0;
-				break;
-			case TRAC_CHANNEL_ACCESS_FAILURE:
-				if(logging){
-					LOG(LOG_LVL_DEBUG, "Frame Tx Fail! Channel Access Failure\r\n");
-				}
-
-				failedTransmissions++;
-				AT86RF212B_TxData(frame, length);
-				break;
-			case TRAC_NO_ACK:
-				if(logging){
-					LOG(LOG_LVL_DEBUG, "Frame TX Fail! No ACK received\r\n");
-				}
-
-				failedTransmissions++;
-				AT86RF212B_TxData(frame, length);
-				break;
-			case TRAC_INVALID:
-				if(logging){
-					LOG(LOG_LVL_DEBUG, "Frame TX Fail! Invalid Frame\r\n");
-				}
-
-				failedTransmissions++;
-				AT86RF212B_TxData(frame, length);
-				break;
-			default:
-				if(logging){
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Frame Tx Fail! Invalid TX State!\r\n");
-				}
-
-				failedTransmissions++;
-				AT86RF212B_TxData(frame, length);
-				break;
-		}
-		//TODO: May need to remove this
-		GeneralDelayUs(57);
+//		uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
+//
+//		switch(txStatus){
+//			case TRAC_SUCCESS:
+//				if(logging){
+//					LOG(LOG_LVL_DEBUG, "Frame TX Success\r\n");
+//				}
+//
+//				sequenceNumber++;
+//				failedTransmissions = 0;
+//				break;
+//			case TRAC_SUCCESS_DATA_PENDING:
+//				if(logging){
+//					LOG(LOG_LVL_DEBUG, "Frame TX Success with data pending\r\n");
+//				}
+//
+//				sequenceNumber++;
+//				failedTransmissions = 0;
+//				break;
+//			case TRAC_CHANNEL_ACCESS_FAILURE:
+//				if(logging){
+//					LOG(LOG_LVL_DEBUG, "Frame Tx Fail! Channel Access Failure\r\n");
+//				}
+//
+//				failedTransmissions++;
+//				AT86RF212B_TxData(frame, length);
+//				break;
+//			case TRAC_NO_ACK:
+//				if(logging){
+//					LOG(LOG_LVL_DEBUG, "Frame TX Fail! No ACK received\r\n");
+//				}
+//
+//				failedTransmissions++;
+//				AT86RF212B_TxData(frame, length);
+//				break;
+//			case TRAC_INVALID:
+//				if(logging){
+//					LOG(LOG_LVL_DEBUG, "Frame TX Fail! Invalid Frame\r\n");
+//				}
+//
+//				failedTransmissions++;
+//				AT86RF212B_TxData(frame, length);
+//				break;
+//			default:
+//				if(logging){
+//					ASSERT(0);
+//					LOG(LOG_LVL_ERROR, "Frame Tx Fail! Invalid TX State!\r\n");
+//				}
+//
+//				failedTransmissions++;
+//				AT86RF212B_TxData(frame, length);
+//				break;
+//		}
 		return;
 	}
 	else{
@@ -646,9 +651,7 @@ static void AT86RF212B_FrameWrite(uint8_t * pTxData, uint8_t length, uint8_t seq
 	AT86RF212B_StartReadAndWriteHAL(pTxHeader, pRxHeader, 9);
 
 	AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
-
 	AT86RF212B_StopReadAndWriteHAL(pTxData, pRxData, nLength);
-
 	AT86RF212B_Delay(AT86RF212B_t7);
 	AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
 
@@ -923,10 +926,9 @@ static void AT86RF212B_WrongStateError(){
 static void AT86RF212B_PhySetChannel(){
 	/* AT86RF212::TRX_OFF */
 	if(config.state == TRX_OFF){
-		//CC_BAND (Table 9-34) 5 for 902.02MHz - 927.5 MHz
-		AT86RF212B_BitWrite(SR_CC_BAND, 5);
-		//(9.8.2) Fc[MHz] = 906[MHz] + 2[MHz] x (k � 1), for k = 1, 2, ..., 10
-		AT86RF212B_BitWrite(SR_CHANNEL, 0);
+		AT86RF212B_BitWrite(SR_CC_BAND, 6);
+		//F[MHz] = 902.0[MHz] + 0.1[MHz]  x CC_NUMBER
+		AT86RF212B_BitWrite(SR_CC_NUMBER, 0x00);
 	}
 	else{
 		if(logging){

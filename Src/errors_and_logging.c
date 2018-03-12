@@ -13,9 +13,9 @@
 #include "terminal.h"
 #include "interfaceHAL.h"
 
-#define MIN_LOG_LVL LOG_LVL_INFO
+#define MIN_LOG_LVL LOG_LVL_ERROR
 
-uint8_t logging = 1;
+uint8_t logging = 0;
 
 void LOG(LOG_LVL lvl, char * message){
 	if(lvl >= MIN_LOG_LVL){
