@@ -159,9 +159,11 @@ void AT86RF212B_Main(){
 			AT86RF212B_UpdateIRQ();
 			if(irqState & (TRX_IRQ_TRX_END)){
 				AT86RF212B_FrameRead(0);
+				nextBeaconUpdate = GeneralGetMs() + 2000;
 			}
 			else if(irqState & (TRX_IRQ_RX_START)){
 				AT86RF212B_FrameRead(1);
+				nextBeaconUpdate = GeneralGetMs() + 2000;
 			}
 			break;
 		case TX_ARET_ON:
@@ -564,14 +566,6 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 							LOG(LOG_LVL_ERROR, "Finishing Reading Data\r\n");
 						}
 						break;
-//						if(i == 0){
-//							AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, length+3);
-//							break;
-//						}
-//						//Finish reading data via SRAM access
-//						pTxData[0] = 0x00;
-//						AT86RF212B_ReadAndWriteHAL(pTxData, &pRxData[i], length-i);
-//						break;
 					}
 					else{
 						if(logging){
