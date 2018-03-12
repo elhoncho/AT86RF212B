@@ -11,8 +11,8 @@
 #include "AT86RF212B.h"
 
 //Hardware back end, ONLY ONE SHOUDL BE TRUE
-#define STM32 0
-#define RASPBERRY_PI 1
+#define STM32 1
+#define RASPBERRY_PI 0
 
 //Settings
 
@@ -54,6 +54,8 @@
 #define AT86RF212B_AACK_SET_PD		0x00
 //Enables the IRQ pin to be used as a frame buffer indicator during frame buffer reads
 #define	AT86RF212B_RX_BL_CTRL		0x01
+//Reduces the ACK time from 12 symbols to 2 or 3 symbols depending on the tx mode
+#define	AT86RF212B_AACK_ACK_TIME	0x01
 
 //Address Filtering
 #define AT86RF212B_PAN_ID_7_0 		0xCC

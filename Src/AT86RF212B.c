@@ -83,6 +83,7 @@ void AT86RF212B_Open(){
 	config.AACK_FLTR_RES_FT = AT86RF212B_AACK_FLTR_RES_FT;
 	//Enables the IRQ pin to be used as a frame buffer indicator during frame buffer reads
 	config.RX_BL_CTRL = AT86RF212B_RX_BL_CTRL;
+	config.AACK_ACK_TIME = AT86RF212B_AACK_ACK_TIME;
 	//Address Filtering
 	config.panId_7_0 = AT86RF212B_PAN_ID_7_0;
 	config.panId_15_8 = AT86RF212B_PAN_ID_15_8;
@@ -1089,6 +1090,7 @@ static void AT86RF212B_SetPhyMode(){
 		AT86RF212B_BitWrite(SR_AACK_FLTR_RES_FT, config.AACK_FLTR_RES_FT);
 		AT86RF212B_BitWrite(SR_RX_SAFE_MODE, config.rxSafeMode);
 		AT86RF212B_BitWrite(SR_RX_BL_CTRL, config.RX_BL_CTRL);
+		AT86RF212B_BitWrite(SR_AACK_ACK_TIME, config.AACK_ACK_TIME);
 		AT86RF212B_RegWrite(RG_PAN_ID_0, config.panId_7_0);
 		AT86RF212B_RegWrite(RG_PAN_ID_1, config.panId_15_8);
 		AT86RF212B_RegWrite(RG_SHORT_ADDR_0, config.shortAddr_7_0);

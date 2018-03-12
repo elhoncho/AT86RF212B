@@ -52,6 +52,9 @@ typedef struct{
 	//Enables the IRQ pin to be used as a frame buffer indicator during frame buffer reads
 	uint8_t RX_BL_CTRL;
 
+	//Reduces the ACK time from 12 symbol periods to 2 or 3 symbol periods depending on the TX mode
+	uint8_t AACK_ACK_TIME;
+
 
 	//Address Filter
 	uint8_t panId_7_0;
