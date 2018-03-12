@@ -235,18 +235,19 @@ static void AT86RF212B_SendBeacon(){
 		else if(config.state == TX_ARET_ON){
 			//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
 			#if AT86RF212B_TX_CRC
-				uint8_t nLength = 10;
+				uint8_t nLength = 11;
 			#else
-				uint8_t nLength = 8;
+				uint8_t nLength = 9;
 			#endif
 
 			uint8_t pRxData[nLength];
 
 			//Frame write command
-			uint8_t pTxData[8] = {0x60,
+			uint8_t pTxData[9] = {0x60,
 			//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
 			nLength-2,
 			//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
+			0x00,
 			0x00,
 			//Sequence number
 			0x00,
