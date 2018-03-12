@@ -500,6 +500,8 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 						if(logging){
 							ASSERT(0);
 							LOG(LOG_LVL_ERROR, "Error while reading frame\r\n");
+							uint8_t tmpStr[20];
+							sprintf(tmpStr, "IRQ Was %i\r\n", irqState);
 						}
 						//Enable preamble detector to start receiving again
 						AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
