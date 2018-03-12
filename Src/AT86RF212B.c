@@ -303,20 +303,19 @@ static void AT86RF212B_SendBeacon(){
 		else if(config.state == TX_ARET_ON){
 			//The length here has to be the length of the data and header plus 2 for the command and PHR plus 2 for the frame check sequence if enabled
 			#if AT86RF212B_TX_CRC
-				uint8_t nLength = 11;
+				uint8_t nLength = 10;
 			#else
-				uint8_t nLength = 9;
+				uint8_t nLength = 8;
 			#endif
 
 			uint8_t pRxData[nLength];
 
 			//Frame write command
-			uint8_t pTxData[11] = {0x60,
+			uint8_t pTxData[8] = {0x60,
 			//PHR (PHR is just the length of the data and header and does not include one for the command or one the PHR its self so it is nLength-2)
 			nLength-2,
 			//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
 			0x00,
-			0x08,
 			//Sequence number
 			0x00,
 			//Target PAN
@@ -520,52 +519,80 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 
 		length = AT86RF212B_FrameLengthRead();
 
-		//Send command to start frame read, send command and read PHR
-		AT86RF212B_StartReadAndWriteHAL(pTxData, pRxData, 2);
-
-		uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
-		uint8_t i = 2;
-		while(i < length){
-			if(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 0){
-				AT86RF212B_ContinueReadAndWriteHAL(&pTxData[i], &pRxData[i], 1);
-				i++;
-
-				//750 ns is needed to make sure that the IRQ pin is valid
-				GeneralDelayUs(1);
-				timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
+		if(length == 0){
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, "No data on frame\r\n");
 			}
-			else if(GeneralGetUs() > timeout){
+			//Enable preamble detector to start receiving again
+			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+			return;
+		}
+		else if(length > 127){
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, "Frame too large\r\n");
+			}
+			//Enable preamble detector to start receiving again
+			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+			return;
+		}
+		else{
+			if(logging){
+				char tmpStr[20];
+				sprintf(tmpStr, "Reading frame of size %i\r\n", length);
+				LOG(LOG_LVL_DEBUG, tmpStr);
+			}
 
-				AT86RF212B_UpdateIRQ();
-				if(irqState & TRX_IRQ_TRX_END){
-					//Finish reading data
-					AT86RF212B_ContinueReadAndWriteHAL(&pTxData[i], &pRxData[i], length-i);
-					break;
+			AT86RF212B_StartReadAndWriteHAL(0,0,0);
+
+			uint32_t timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
+			uint8_t i = 0;
+			while(i < length){
+				if(AT86RF212B_ReadPinHAL(AT86RF212B_PIN_IRQ) == 0){
+					AT86RF212B_ContinueReadAndWriteHAL(&pTxData[i], &pRxData[i], 1);
+					i++;
+
+					//750 ns is needed to make sure that the IRQ pin is valid
+					GeneralDelayUs(1);
+					timeout = GeneralGetUs() + AT86RF212B_UsPerOctet()*2;
 				}
-				else{
-					if(logging){
-						uint8_t tmpStr[30];
-						ASSERT(0);
-						LOG(LOG_LVL_ERROR, "Timeout while reading frame\r\n");
-						sprintf(tmpStr, "Read %i bytes\r\nIRQ = %02X\r\n", i, irqState);
-						LOG(LOG_LVL_ERROR, tmpStr);
+				else if(GeneralGetUs() > timeout){
+
+					AT86RF212B_UpdateIRQ();
+					if(irqState & TRX_IRQ_TRX_END){
+						//Finish reading data
+						AT86RF212B_ContinueReadAndWriteHAL(&pTxData[i], &pRxData[i], length-i);
+						break;
 					}
-					AT86RF212B_StopReadAndWriteHAL(0, 0, 0);
-					//Enable preamble detector to start receiving again
-					AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
-					return;
+					else{
+						if(logging){
+							uint8_t tmpStr[30];
+							ASSERT(0);
+							LOG(LOG_LVL_ERROR, "Timeout while reading frame\r\n");
+							sprintf(tmpStr, "Read %i bytes\r\nIRQ = %02X\r\n", i, irqState);
+							LOG(LOG_LVL_ERROR, tmpStr);
+						}
+						AT86RF212B_StopReadAndWriteHAL(0, 0, 0);
+						//Enable preamble detector to start receiving again
+						AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
+						return;
+					}
 				}
 			}
-		}
-		//Read the last three status bytes and end the frame read
-		AT86RF212B_StopReadAndWriteHAL(&pTxData[length], &pRxData[length], 3);
+			//Read the last three status bytes and end the frame read
+			AT86RF212B_StopReadAndWriteHAL(&pTxData[length], &pRxData[length], 3);
 
-		if(logging){
-			LOG(LOG_LVL_DEBUG, "Fast Mode Done\r\n");
+			if(logging){
+				LOG(LOG_LVL_DEBUG, "Fast Mode Done\r\n");
+			}
+
+			//If data frame make sure TRX_IRQ_TRX_END is received
+			if((pRxData[2] & 0x07) == 1){
+				AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+			}
+
 		}
-		//TODO: What happens if the IRQ that started this function includes the TRX_END? This will lock here, or miss frames
-		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-		AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, nLength);
 	}
 	else{
 		length = AT86RF212B_FrameLengthRead();

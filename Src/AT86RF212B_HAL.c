@@ -241,15 +241,19 @@ void AT86RF212B_ReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t s
 void AT86RF212B_StartReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t size){
 #if RASPBERRY_PI
 	digitalWrite(SPI_NSS_PIN, LOW);
-	wiringPiSPIDataRW(SPI_CHANNEL, pTxData, size);
-	memcpy(pRxData, pTxData, size);
+	if(size > 0){
+		wiringPiSPIDataRW(SPI_CHANNEL, pTxData, size);
+		memcpy(pRxData, pTxData, size);
+	}
 #endif
 
 #if STM32
 	HAL_GPIO_WritePin(SPI_NSS_PORT, SPI_NSS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_TransmitReceive(&hspi , pTxData, pRxData, size, timeout);
-	//TODO: This probably needs to be changed, could lock up here.
-	while(hspi.State == HAL_SPI_STATE_BUSY);
+	if(size > 0){
+		HAL_SPI_TransmitReceive(&hspi , pTxData, pRxData, size, timeout);
+		//TODO: This probably needs to be changed, could lock up here.
+		while(hspi.State == HAL_SPI_STATE_BUSY);
+	}
 #endif
 }
 
