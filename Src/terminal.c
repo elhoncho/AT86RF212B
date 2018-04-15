@@ -216,7 +216,7 @@ void TerminalOpen(){
     strcpy(tmpStr,"\r\n>");
     TerminalWrite((uint8_t*)tmpStr);
 #if STM32
-    SetEchoInput(1);
+    SetEchoInput(0);
 #endif
 
 #if RASPBERRY_PI
