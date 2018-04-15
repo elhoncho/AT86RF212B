@@ -266,7 +266,7 @@ static void AT86RF212B_SendBeacon(){
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 	static uint8_t failedTransmissions = 0;
 	static uint8_t sequenceNumber = 0;
-	static uint8_t* tmpStr[40];
+	uint8_t* tmpStr[40];
 
 	uint32_t startTime = GeneralGetMs();
 
@@ -435,13 +435,14 @@ static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
 }
 
 void AT86RF212B_FrameRead(){
-	static uint8_t pTxData[150];
-	static uint8_t pRxData[150];
+	uint8_t pTxData[150];
+	uint8_t pRxData[150];
 	uint8_t length = 0;
 
+	//Read frame command
 	pTxData[0] = 0x20;
 
-	//Disable preamble detector to start receiving again
+	//Disable preamble detector to stop receaving
 	AT86RF212B_BitWrite(SR_RX_PDT_DIS, 1);
 
 	length = AT86RF212B_FrameLengthRead();
@@ -492,15 +493,10 @@ void AT86RF212B_FrameRead(){
 
 	//Check if it is a data frame
 	if((pRxData[2] & 0x07) == 1){
-		static uint8_t prevSequence = 0xFF;
 		//Wait twice as long as beacons are being sent out
 		nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 		beaconFalures = 0;
-
-		if(prevSequence != pRxData[4]){
-			prevSequence = pRxData[4];
-			InterfaceWriteToDataOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
-		}
+		InterfaceWriteToDataOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
 	}
 	//Check if it is a beacon frame
 	else if((pRxData[2] & 0x07) == 0){
@@ -539,10 +535,10 @@ static void AT86RF212B_FrameWrite(uint8_t * pTxData, uint8_t length, uint8_t seq
 	uint8_t nLength = length;
 #endif
 
-	static uint8_t pRxData[150];
+	uint8_t pRxData[150];
 
-	static uint8_t pRxHeader[9];
-	static uint8_t pTxHeader[9] = {
+	uint8_t pRxHeader[9];
+	uint8_t pTxHeader[9] = {
 	//Frame write command
 	0x60,
 
