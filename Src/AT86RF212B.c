@@ -611,8 +611,8 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 		nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 		beaconFalures = 0;
 
-		if(prevSequence != pRxData[1]){
-			prevSequence = pRxData[1];
+		if(prevSequence != pRxData[4]){
+			prevSequence = pRxData[4];
 			InterfaceWriteToDataOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
 		}
 	}
