@@ -309,11 +309,11 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 
 	UpdateState();
 
-	if(config.state != PLL_ON){
-		AT86RF212B_PhyStateChange(PLL_ON);
+	if(config.state != TX_ARET_ON){
+		AT86RF212B_PhyStateChange(TX_ARET_ON);
 		AT86RF212B_TxData(frame, length);
 	}
-	else if(config.state == PLL_ON){
+	else if(config.state == TX_ARET_ON){
 		if(length > AT86RF212B_MAX_DATA){
 			if(logging){
 				ASSERT(0);
@@ -355,59 +355,59 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 			startTime = GeneralGetMs();
 		}
 
-//		uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
-//
-//		switch(txStatus){
-//			case TRAC_SUCCESS:
-//				if(logging){
-//					LOG(LOG_LVL_DEBUG, "Frame TX Success\r\n");
-//				}
-//
-//				sequenceNumber++;
-//				failedTransmissions = 0;
-//				break;
-//			case TRAC_SUCCESS_DATA_PENDING:
-//				if(logging){
-//					LOG(LOG_LVL_DEBUG, "Frame TX Success with data pending\r\n");
-//				}
-//
-//				sequenceNumber++;
-//				failedTransmissions = 0;
-//				break;
-//			case TRAC_CHANNEL_ACCESS_FAILURE:
-//				if(logging){
-//					LOG(LOG_LVL_DEBUG, "Frame Tx Fail! Channel Access Failure\r\n");
-//				}
-//
-//				failedTransmissions++;
-//				AT86RF212B_TxData(frame, length);
-//				break;
-//			case TRAC_NO_ACK:
-//				if(logging){
-//					LOG(LOG_LVL_DEBUG, "Frame TX Fail! No ACK received\r\n");
-//				}
-//
-//				failedTransmissions++;
-//				AT86RF212B_TxData(frame, length);
-//				break;
-//			case TRAC_INVALID:
-//				if(logging){
-//					LOG(LOG_LVL_DEBUG, "Frame TX Fail! Invalid Frame\r\n");
-//				}
-//
-//				failedTransmissions++;
-//				AT86RF212B_TxData(frame, length);
-//				break;
-//			default:
-//				if(logging){
-//					ASSERT(0);
-//					LOG(LOG_LVL_ERROR, "Frame Tx Fail! Invalid TX State!\r\n");
-//				}
-//
-//				failedTransmissions++;
-//				AT86RF212B_TxData(frame, length);
-//				break;
-//		}
+		uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
+
+		switch(txStatus){
+			case TRAC_SUCCESS:
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "Frame TX Success\r\n");
+				}
+
+				sequenceNumber++;
+				failedTransmissions = 0;
+				break;
+			case TRAC_SUCCESS_DATA_PENDING:
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "Frame TX Success with data pending\r\n");
+				}
+
+				sequenceNumber++;
+				failedTransmissions = 0;
+				break;
+			case TRAC_CHANNEL_ACCESS_FAILURE:
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "Frame Tx Fail! Channel Access Failure\r\n");
+				}
+
+				failedTransmissions++;
+				AT86RF212B_TxData(frame, length);
+				break;
+			case TRAC_NO_ACK:
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "Frame TX Fail! No ACK received\r\n");
+				}
+
+				failedTransmissions++;
+				AT86RF212B_TxData(frame, length);
+				break;
+			case TRAC_INVALID:
+				if(logging){
+					LOG(LOG_LVL_DEBUG, "Frame TX Fail! Invalid Frame\r\n");
+				}
+
+				failedTransmissions++;
+				AT86RF212B_TxData(frame, length);
+				break;
+			default:
+				if(logging){
+					ASSERT(0);
+					LOG(LOG_LVL_ERROR, "Frame Tx Fail! Invalid TX State!\r\n");
+				}
+
+				failedTransmissions++;
+				AT86RF212B_TxData(frame, length);
+				break;
+		}
 
 		GeneralDelayUs(1000);
 		return;
