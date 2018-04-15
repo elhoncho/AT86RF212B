@@ -155,11 +155,10 @@ void AT86RF212B_Main(){
 
 			AT86RF212B_UpdateIRQ();
 			if(irqState & (TRX_IRQ_TRX_END)){
-				AT86RF212B_FrameRead(0);
+				AT86RF212B_FrameRead();
 				nextBeaconUpdate = GeneralGetMs() + 2000;
 			}
 			else if(irqState & (TRX_IRQ_RX_START)){
-				AT86RF212B_FrameRead(1);
 				nextBeaconUpdate = GeneralGetMs() + 2000;
 			}
 			break;
@@ -435,7 +434,7 @@ static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
 	LOG(LOG_LVL_INFO, "\r\n");
 }
 
-void AT86RF212B_FrameRead(uint8_t fastMode){
+void AT86RF212B_FrameRead(){
 	static uint8_t pTxData[150];
 	static uint8_t pRxData[150];
 	uint8_t length = 0;
