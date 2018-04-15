@@ -52,7 +52,7 @@ static AT86RF212B_Config config;
 static volatile uint8_t interupt = 0;
 static uint32_t nextBeaconUpdate = 0;
 static uint8_t beaconFalures;
-static uint8_t ackReceived = 0;
+//static uint8_t ackReceived = 0;
 static uint8_t beaconOn = 0;
 static uint8_t irqState = 0;
 
@@ -606,15 +606,15 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 
 	//Check if it is a data frame
 	if((pRxData[2] & 0x07) == 1){
+		static uint8_t prevSequence = 0xFF;
 		//Wait twice as long as beacons are being sent out
 		nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 		beaconFalures = 0;
 
-		//length - AT86RF212B_DATA_OFFSET (header bytes)
-		//uint8_t dataLength = length-AT86RF212B_DATA_OFFSET;
-		//uint8_t data[dataLength];
-		//memcpy(data, &pRxData[AT86RF212B_DATA_OFFSET], dataLength);
-		InterfaceWriteToDataOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
+		if(prevSequence != pRxData[1]){
+			prevSequence = pRxData[1];
+			InterfaceWriteToDataOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
+		}
 	}
 	//Check if it is a beacon frame
 	else if((pRxData[2] & 0x07) == 0){
@@ -627,7 +627,7 @@ void AT86RF212B_FrameRead(uint8_t fastMode){
 		//Wait twice as long as beacons are being sent out
 		nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 		beaconFalures = 0;
-		ackReceived = 1;
+		//ackReceived = 1;
 	}
 	else{
 		if(logging){
