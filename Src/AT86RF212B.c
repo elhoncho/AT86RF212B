@@ -371,8 +371,6 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 				AT86RF212B_TxData(frame, length);
 				break;
 		}
-
-		GeneralDelayUs(1000);
 		return;
 	}
 	else{
