@@ -14,6 +14,7 @@
 #include "terminal.h"
 #include "AT86RF212B_HAL.h"
 #include "../Settings/AT86RF212B_Settings.h"
+#include "../Settings/HAL_Settings.h"
 
 #if STM32
 #include "usb_device.h"
