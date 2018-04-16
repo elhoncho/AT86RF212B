@@ -11,9 +11,9 @@
 #include "AT86RF212B.h"
 #include "generalHAL.h"
 #include "errors_and_logging.h"
-#include "AT86RF212B_Settings.h"
 #include "terminal.h"
 #include "AT86RF212B_HAL.h"
+#include "../Settings/AT86RF212B_Settings.h"
 
 #if STM32
 #include "usb_device.h"

@@ -21,8 +21,9 @@
 #include "AT86RF212B_Regesters.h"
 #include "AT86RF212B_Constants.h"
 #include "RawMode.h"
-#include "AT86RF212B_Settings.h"
 #include "MainController.h"
+#include "../Settings/AT86RF212B_Settings.h"
+#include "../Settings/HAL_Settings.h"
 
 #if RASPBERRY_PI
 #include "../../main.h"
@@ -216,11 +217,11 @@ void TerminalOpen(){
     strcpy(tmpStr,"\r\n>");
     TerminalWrite((uint8_t*)tmpStr);
 #if STM32
-    SetEchoInput(0);
+    SetEchoInput(ECHO_INPUT);
 #endif
 
 #if RASPBERRY_PI
-    SetEchoInput(0);
+    SetEchoInput(ECHO_INPUT);
 #endif
 }
 

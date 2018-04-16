@@ -8,8 +8,9 @@
 #include "interfaceHAL.h"
 #include "AT86RF212B.h"
 #include "AT86RF212B_Constants.h"
-#include "AT86RF212B_Settings.h"
 #include "MainController.h"
+#include "../Settings/AT86RF212B_Settings.h"
+#include "../Settings/HAL_Settings.h"
 
 #if STM32
 #include<usbd_cdc_if.h>
@@ -17,7 +18,7 @@
 
 
 void RawModeOpen(){
-	SetEchoInput(0);
+	SetEchoInput(ECHO_INPUT);
 	switch(MainControllerGetMode()){
 		case MODE_RAW_RX:
 			AT86RF212B_PhyStateChange(RX_AACK_ON);
@@ -32,7 +33,7 @@ void RawModeOpen(){
 void RawModeMain(){
 
 	static uint8_t txData[AT86RF212B_MAX_DATA];
-	uint8_t i;
+	uint8_t i = 0;
 	uint8_t tmpChar;
 	for(i = 0; i < AT86RF212B_MAX_DATA; i++){
 		uint8_t bufferStatus = InterfacePopFromInputBufferHAL(&tmpChar);
@@ -55,6 +56,7 @@ void RawModeMain(){
 				//Buffer not empty
 				//Send current packet length is i+1 because i is at a 0 offset
 				AT86RF212B_TxData(txData, i+1);
+
 				//Continue clearing buffer
 				RawModeMain();
 				return;

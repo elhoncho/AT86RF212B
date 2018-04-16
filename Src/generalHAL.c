@@ -6,7 +6,8 @@
  */
 
 #include <stdint.h>
-#include "AT86RF212B_Settings.h"
+
+#include "../Settings/AT86RF212B_Settings.h"
 
 #if RASPBERRY_PI
 #include "wiringPi.h"
