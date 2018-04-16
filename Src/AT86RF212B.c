@@ -265,7 +265,6 @@ static void AT86RF212B_SendBeacon(){
 }
 //Length is the lengt of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
-	static uint8_t failedTransmissions = 0;
 	static uint8_t sequenceNumber = 0;
 	uint8_t* tmpStr[40];
 
@@ -328,7 +327,6 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 				}
 
 				sequenceNumber++;
-				failedTransmissions = 0;
 				break;
 			case TRAC_SUCCESS_DATA_PENDING:
 				if(logging){
@@ -336,40 +334,28 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 				}
 
 				sequenceNumber++;
-				failedTransmissions = 0;
 				break;
 			case TRAC_CHANNEL_ACCESS_FAILURE:
 				if(logging){
 					LOG(LOG_LVL_DEBUG, "Frame Tx Fail! Channel Access Failure\r\n");
 				}
-
-				failedTransmissions++;
 				AT86RF212B_TxData(frame, length);
 				break;
 			case TRAC_NO_ACK:
 				if(logging){
 					LOG(LOG_LVL_DEBUG, "Frame TX Fail! No ACK received\r\n");
 				}
-
-				failedTransmissions++;
-				AT86RF212B_TxData(frame, length);
 				break;
 			case TRAC_INVALID:
 				if(logging){
 					LOG(LOG_LVL_DEBUG, "Frame TX Fail! Invalid Frame\r\n");
 				}
-
-				failedTransmissions++;
-				AT86RF212B_TxData(frame, length);
 				break;
 			default:
 				if(logging){
 					ASSERT(0);
 					LOG(LOG_LVL_ERROR, "Frame Tx Fail! Invalid TX State!\r\n");
 				}
-
-				failedTransmissions++;
-				AT86RF212B_TxData(frame, length);
 				break;
 		}
 		return;
