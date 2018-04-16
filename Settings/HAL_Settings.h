@@ -12,16 +12,4 @@
 #define STM32 1
 #define RASPBERRY_PI 0
 
-#if STM32
-
-#define ECHO_INPUT 0
-
-#endif
-
-#if RASPBERRY_PI
-
-# define ECHO_INPUT 0
-
-#endif
-
 #endif /* HAL_SETTINGS_H_ */

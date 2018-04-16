@@ -5,8 +5,9 @@
 #include "RawMode.h"
 #include <stdint.h>
 #include "MainController.h"
+#include "../Settings/TerminalSettings.h"
 
-static uint8_t AT86RF212B_Mode = MODE_TERMINAL;
+static uint8_t AT86RF212B_Mode = TERMINAL_MODE;
 
 void MainControllerOpen(){
 	AT86RF212B_Open();

@@ -11,6 +11,7 @@
 #include "AT86RF212B_Regesters.h"
 #include "AT86RF212B_Constants.h"
 #include "../Settings/AT86RF212B_Settings.h"
+#include "../Settings/TerminalSettings.h"
 
 //TODO: *******NEED TO WRITE FUNCTIONALITY TO RECALIBRATE EVERY FIVE MINUITS*****************
 

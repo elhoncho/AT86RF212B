@@ -10,7 +10,7 @@
 #include "AT86RF212B_Constants.h"
 #include "MainController.h"
 #include "../Settings/AT86RF212B_Settings.h"
-#include "../Settings/HAL_Settings.h"
+#include "../Settings/TerminalSettings.h"
 
 #if STM32
 #include<usbd_cdc_if.h>

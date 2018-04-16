@@ -24,6 +24,7 @@
 #include "MainController.h"
 #include "../Settings/AT86RF212B_Settings.h"
 #include "../Settings/HAL_Settings.h"
+#include "../Settings/TerminalSettings.h"
 
 #if RASPBERRY_PI
 #include "../../main.h"
@@ -246,7 +247,7 @@ void TerminalRead(){
         while(InterfacePopFromInputBufferHAL(&tmpChar)){
             uint8_t len = strlen(arg[i]);
 
-            //Dont store \r or \n or space or .
+            //Don't store \r or \n or space or .
             if(tmpChar != 0x0D && tmpChar != 0x0A && tmpChar != 0x20 && tmpChar != 0x2E){
                 arg[i][len] = tmpChar;
                 arg[i][len+1] = '\0';
@@ -275,10 +276,6 @@ void TerminalRead(){
         if(strlen(arg[0]) >= 1){
             while(commands[i].execute){
                 if(strcmp(arg[0], commands[i].name) == 0){
-                	//Write a new line
-                    //strcpy(tmpStr, "\r\n");
-                    //TerminalWrite(tmpStr);
-
                     //Execute Command
                     commands[i].execute(arg[1], arg[2]);
 
