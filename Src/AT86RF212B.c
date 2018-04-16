@@ -47,7 +47,7 @@ extern uint8_t logging;
 static AT86RF212B_Config config;
 static volatile uint8_t interupt = 0;
 static uint32_t nextBeaconUpdate = 0;
-static uint8_t beaconFalures;
+static uint8_t beaconFailures;
 static uint8_t beaconOn = 0;
 static uint8_t irqState = 0;
 
@@ -142,13 +142,15 @@ void AT86RF212B_Main(){
 				if(logging){
 					LOG(LOG_LVL_DEBUG, "Beacon Failed\r\n");
 				}
-				beaconFalures++;
+				beaconFailures++;
 				nextBeaconUpdate = GeneralGetMs() + 2000;
 
-				if(beaconFalures > 9){
-					MainControllerSetMode(MODE_TERMINAL);
-					beaconFalures = 0;
+
+				if(beaconFailures > 9){
+					//MainControllerSetMode(MODE_TERMINAL);
+					beaconFailures = 0;
 				}
+
 			}
 
 			AT86RF212B_UpdateIRQ();
@@ -455,20 +457,20 @@ void AT86RF212B_FrameRead(){
 	if((pRxData[2] & 0x07) == 1){
 		//Wait twice as long as beacons are being sent out
 		nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
-		beaconFalures = 0;
+		beaconFailures = 0;
 		InterfaceWriteToDataOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
 	}
 	//Check if it is a beacon frame
 	else if((pRxData[2] & 0x07) == 0){
 		//Wait twice as long as beacons are being sent out
 		nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
-		beaconFalures = 0;
+		beaconFailures = 0;
 	}
 	//Check if it is an ACK
 	else if((pRxData[2] & 0x07) == 2){
 		//Wait twice as long as beacons are being sent out
 		nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
-		beaconFalures = 0;
+		beaconFailures = 0;
 		//ackReceived = 1;
 	}
 	else{
