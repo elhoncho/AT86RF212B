@@ -19,6 +19,9 @@ void MainControllerOpen(){
 	case MODE_RAW_RX:
 		RawModeOpen();
 		break;
+	case MODE_RAW_RX_TX:
+		RawModeOpen();
+		break;
 	case MODE_TERMINAL:
 		TerminalOpen();
 		break;
@@ -40,6 +43,9 @@ void MainControllerLoop(){
 			RawModeMain();
 			break;
 		case MODE_RAW_RX:
+			break;
+		case MODE_RAW_RX_TX:
+			RawModeMain();
 			break;
 		case MODE_TERMINAL:
 			TerminalMain();

@@ -26,6 +26,9 @@ void RawModeOpen(){
 		case MODE_RAW_TX:
 			AT86RF212B_PhyStateChange(TX_ARET_ON);
 			break;
+		case MODE_RAW_RX_TX:
+			AT86RF212B_PhyStateChange(RX_AACK_ON);
+			break;
 	}
 }
 
@@ -66,6 +69,9 @@ void RawModeMain(){
 
 	if(i){
 		AT86RF212B_TxData(txData, i);
+		if(MainControllerGetMode() == MODE_RAW_RX_TX){
+			AT86RF212B_PhyStateChange(RX_AACK_ON);
+		}
 	}
 	InterfaceReadInput();
 	return;
