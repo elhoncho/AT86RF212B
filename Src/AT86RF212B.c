@@ -39,9 +39,6 @@ static void 	AT86RF212B_WrongStateError();
 static void 	AT86RF212B_SetRegisters();
 static void 	AT86RF212B_SendBeacon();
 static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
-static uint32_t AT86RF212B_UsPerOctet();
-
-
 
 //-----------External Variables--------------------//
 extern uint8_t logging;
@@ -194,34 +191,6 @@ void AT86RF212B_Main(){
 			break;
 	}
 }
-//-------------------Primitive Functions from AT86RF212 Programming Manual----------------------//
-
-uint8_t AT86RF212B_RegRead(uint8_t reg){
-	uint8_t pRxData[2] = {0, 0};
-	uint8_t pTxData[2] = {0, 0};
-
-	//Set the MSB and MSB-1 of the 8 bit register to a 1 0 for read access
-	reg |= 1 << 7;
-	reg &= ~(1 << 6);
-	pTxData[0] = reg;
-	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, 2);
-	//First byte is a configurable status and the 2nd byte is the register value
-	return pRxData[1];
-}
-
-uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
-	uint8_t pRxData[2] = {0, 0};
-	uint8_t pTxData[2] = {0, 0};
-
-	//Set the MSB and MSB-1 of the 8 bit register to a 1 1 for write access
-	reg |= 1 << 7;
-	reg |= 1 << 6;
-	pTxData[0] = reg;
-	pTxData[1] = value;
-	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, 2);
-
-	return pRxData[1];
-}
 
 static void AT86RF212B_SendBeacon(){
 	UpdateState();
@@ -263,7 +232,8 @@ static void AT86RF212B_SendBeacon(){
 			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
 		}
 }
-//Length is the lengt of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
+
+//Length is the length of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 	static uint8_t sequenceNumber = 0;
 	uint8_t* tmpStr[40];
@@ -291,22 +261,15 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 			}
 			return;
 		}
-		else{
-			if(logging){
-				uint8_t tmpStr[20];
-				sprintf(tmpStr, "Sending %i\r\n", length);
-				LOG(LOG_LVL_ERROR, tmpStr);
-			}
-		}
 
 		AT86RF212B_FrameWrite(frame, length, sequenceNumber);
+		sequenceNumber++;
 
 		if(logging){
 			sprintf((char*)tmpStr, "---------------------\r\nTime to buffer: %lu\r\n", GeneralGetMs() - startTime);
 			LOG(LOG_LVL_ERROR, (char*)tmpStr);
 			startTime = GeneralGetMs();
 		}
-
 
 		//Wait until done transmitting data
 		//TODO: This may affect speed
@@ -318,47 +281,30 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 			startTime = GeneralGetMs();
 		}
 
-		uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
-
-		switch(txStatus){
-			case TRAC_SUCCESS:
-				if(logging){
+		if(logging){
+			uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
+			switch(txStatus){
+				case TRAC_SUCCESS:
 					LOG(LOG_LVL_DEBUG, "Frame TX Success\r\n");
-				}
-
-				sequenceNumber++;
-				break;
-			case TRAC_SUCCESS_DATA_PENDING:
-				if(logging){
+					break;
+				case TRAC_SUCCESS_DATA_PENDING:
 					LOG(LOG_LVL_DEBUG, "Frame TX Success with data pending\r\n");
-				}
-
-				sequenceNumber++;
-				break;
-			case TRAC_CHANNEL_ACCESS_FAILURE:
-				if(logging){
+					break;
+				case TRAC_CHANNEL_ACCESS_FAILURE:
 					LOG(LOG_LVL_DEBUG, "Frame Tx Fail! Channel Access Failure\r\n");
-				}
-				AT86RF212B_TxData(frame, length);
-				break;
-			case TRAC_NO_ACK:
-				if(logging){
+					break;
+				case TRAC_NO_ACK:
 					LOG(LOG_LVL_DEBUG, "Frame TX Fail! No ACK received\r\n");
-				}
-				break;
-			case TRAC_INVALID:
-				if(logging){
+					break;
+				case TRAC_INVALID:
 					LOG(LOG_LVL_DEBUG, "Frame TX Fail! Invalid Frame\r\n");
-				}
-				break;
-			default:
-				if(logging){
+					break;
+				default:
 					ASSERT(0);
 					LOG(LOG_LVL_ERROR, "Frame Tx Fail! Invalid TX State!\r\n");
-				}
-				break;
+					break;
+			}
 		}
-		return;
 	}
 	else{
 		if(logging){
@@ -366,6 +312,35 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
 		}
 	}
+}
+
+//-------------------Primitive Functions from AT86RF212 Programming Manual----------------------//
+
+uint8_t AT86RF212B_RegRead(uint8_t reg){
+	uint8_t pRxData[2] = {0, 0};
+	uint8_t pTxData[2] = {0, 0};
+
+	//Set the MSB and MSB-1 of the 8 bit register to a 1 0 for read access
+	reg |= 1 << 7;
+	reg &= ~(1 << 6);
+	pTxData[0] = reg;
+	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, 2);
+	//First byte is a configurable status and the 2nd byte is the register value
+	return pRxData[1];
+}
+
+uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value){
+	uint8_t pRxData[2] = {0, 0};
+	uint8_t pTxData[2] = {0, 0};
+
+	//Set the MSB and MSB-1 of the 8 bit register to a 1 1 for write access
+	reg |= 1 << 7;
+	reg |= 1 << 6;
+	pTxData[0] = reg;
+	pTxData[1] = value;
+	AT86RF212B_ReadAndWriteHAL(pTxData, pRxData, 2);
+
+	return pRxData[1];
 }
 
 //==============================================================================================//
@@ -1366,42 +1341,6 @@ static void AT86RF212B_Delay(uint8_t time){
 			return;
 	}
 	return;
-}
-
-uint32_t AT86RF212B_UsPerOctet(){
-	switch(config.phyMode){
-		case AT86RF212B_BPSK_20:
-			return 400;
-			break;
-		case AT86RF212B_BPSK_40:
-			return 200;
-			break;
-		case AT86RF212B_O_QPSK_100:
-			return 80;
-			break;
-		case AT86RF212B_O_QPSK_200:
-			return 40;
-			break;
-		case AT86RF212B_O_QPSK_400:
-			return 20;
-			break;
-		case AT86RF212B_O_QPSK_250:
-			return 32;
-			break;
-		case AT86RF212B_O_QPSK_500:
-			return 16;
-			break;
-		case AT86RF212B_O_QPSK_1000:
-			return 8;
-			break;
-		default:
-			if(logging){
-				ASSERT(0);
-				LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
-			}
-			return 400;
-			break;
-	}
 }
 
 void AT86RF212B_ToggleBeacon(){
