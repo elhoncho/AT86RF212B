@@ -408,6 +408,21 @@ static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
 	LOG(LOG_LVL_INFO, "\r\n");
 }
 
+
+static void 	AT86RF212B_IrqInit (){
+
+	//Set IRQ Polarity to active high
+	AT86RF212B_BitWrite(SR_IRQ_POLARITY, 0);
+	//Enable Awake IRQ
+	//AT86RF212B_RegWrite(RG_IRQ_MASK, (TRX_IRQ_AWAKE_END | TRX_IRQ_PLL_LOCK | TRX_IRQ_TRX_END | TRX_IRQ_RX_START | TRX_IRQ_AMI));
+	AT86RF212B_RegWrite(RG_IRQ_MASK, 0xFF);
+	//Only show enabled interrupts in the IRQ register
+	AT86RF212B_BitWrite(SR_IRQ_MASK_MODE, 0);
+
+}
+
+//--------------------------Routines from AT86RF212 Programming Manual--------------------------//
+
 void AT86RF212B_FrameRead(){
 	uint8_t pTxData[150];
 	uint8_t pRxData[150];
@@ -552,19 +567,6 @@ static void AT86RF212B_FrameWrite(uint8_t * pData, uint8_t length, uint8_t seque
 //	}
 }
 
-static void 	AT86RF212B_IrqInit (){
-
-	//Set IRQ Polarity to active high
-	AT86RF212B_BitWrite(SR_IRQ_POLARITY, 0);
-	//Enable Awake IRQ
-	//AT86RF212B_RegWrite(RG_IRQ_MASK, (TRX_IRQ_AWAKE_END | TRX_IRQ_PLL_LOCK | TRX_IRQ_TRX_END | TRX_IRQ_RX_START | TRX_IRQ_AMI));
-	AT86RF212B_RegWrite(RG_IRQ_MASK, 0xFF);
-	//Only show enabled interrupts in the IRQ register
-	AT86RF212B_BitWrite(SR_IRQ_MASK_MODE, 0);
-
-}
-
-//--------------------------Routines from AT86RF212 Programming Manual--------------------------//
 
 static void AT86RF212B_PowerOnReset(){
 	//The following programming sequence should be executed after power-on to
