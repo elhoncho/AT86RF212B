@@ -385,6 +385,7 @@ void AT86RF212B_FrameRead(){
 	uint8_t pRxData[150];
 	uint8_t length = 0;
 
+	static uint8_t prevSequenceNumber = 99;
 	//Read frame command
 	pTxData[0] = 0x20;
 
@@ -442,7 +443,11 @@ void AT86RF212B_FrameRead(){
 		//Wait twice as long as beacons are being sent out
 		nextBeaconUpdate = GeneralGetMs()+BEACON_TX_INTERVAL+BEACON_TX_INTERVAL;
 		beaconFailures = 0;
-		InterfaceWriteToDataOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
+
+		if(pRxData[4] != prevSequenceNumber){
+			InterfaceWriteToDataOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
+			prevSequenceNumber = pRxData[4];
+		}
 	}
 	//Check if it is a beacon frame
 	else if((pRxData[2] & 0x07) == 0){
