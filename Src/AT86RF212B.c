@@ -472,10 +472,6 @@ void AT86RF212B_FrameRead(){
 		beaconFailures = 0;
 
 		if(pRxData[4] != prevSequenceNumber){
-			uint8_t tmpData = 0xFFFF;
-			InterfaceWriteToDataOutputHAL(&tmpData, 2);
-
-			InterfaceWriteToDataOutputHAL(&tmpData, 2);
 			InterfaceWriteToDataOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
 			prevSequenceNumber = pRxData[4];
 		}
