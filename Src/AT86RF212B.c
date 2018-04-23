@@ -235,6 +235,7 @@ static void AT86RF212B_SendBeacon(){
 //Length is the length of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t reTx){
 	static uint8_t sequenceNumber = 0;
+	static uint8_t reTxAttempt = 0;
 	uint8_t* tmpStr[40];
 
 	UpdateState();
@@ -265,7 +266,14 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t reTx){
 			sequenceNumber++;
 		}
 		else{
+			//TODO: Something is wrong here, it never gets an ACK when this is initiated
+			reTxAttempt++;
+			if(reTxAttempt >= 10){
+				reTxAttempt = 0;
+				return;
+			}
 			AT86RF212B_FrameWrite(frame, length, sequenceNumber-1);
+
 		}
 
 		//Wait until done transmitting data
@@ -464,8 +472,10 @@ void AT86RF212B_FrameRead(){
 		beaconFailures = 0;
 
 		if(pRxData[4] != prevSequenceNumber){
-			uint8_t tmpData = 0xFF;
-			InterfaceWriteToDataOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
+			uint8_t tmpData = 0xFFFF;
+			InterfaceWriteToDataOutputHAL(&tmpData, 2);
+
+			InterfaceWriteToDataOutputHAL(&tmpData, 2);
 			InterfaceWriteToDataOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
 			prevSequenceNumber = pRxData[4];
 		}

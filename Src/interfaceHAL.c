@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include "terminal.h"
 #include "interfaceHAL.h"
+#include "generalHAL.h"
 #include "../Settings/AT86RF212B_Settings.h"
 
 #if STM32
@@ -70,7 +71,7 @@ void InterfaceWriteToDataOutputHAL(uint8_t * pTxData, uint32_t length){
 
 	#if STM32
 	if(hUsbDeviceHS.dev_state == USBD_STATE_CONFIGURED){
-		//TODO: Fix this, can lock up here
+
 		while(CDC_Transmit_HS(pTxData, length) == USBD_BUSY);
 	}
 	#endif
@@ -89,7 +90,13 @@ void InterfaceWriteToLogHAL(uint8_t *txStr, uint16_t length){
 			length = length +1;
 		}
 		//TODO: Fix this, if too much data too fast can lock up here
-		while(CDC_Transmit_HS((uint8_t*)txStr, length) == USBD_BUSY);
+		uint32_t startTime = 0;
+		while(CDC_Transmit_HS((uint8_t*)txStr, length) == USBD_BUSY){
+			startTime++;
+			if(startTime > 100000){
+				break;
+			}
+		}
 	}
 #endif
 }
