@@ -973,7 +973,7 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 	//Clear the interrupt flag
 	interupt = 0;
 
-	uint8_t irqState = AT86RF212B_RegRead(RG_IRQ_STATUS);
+	irqState = AT86RF212B_RegRead(RG_IRQ_STATUS);
 
 	if(!(irqState & expectedIRQ)){
 		if(logging){
