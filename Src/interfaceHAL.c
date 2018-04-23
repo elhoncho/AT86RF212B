@@ -25,13 +25,12 @@ static uint8_t echoInput = 0;
 #endif
 
 //Max amount of characters to buffer on the rx
-#define BUFFER_LENGTH 512
+#define BUFFER_LENGTH 256
 
 
 typedef struct {
     volatile uint16_t head;
     volatile uint16_t tail;
-    volatile uint16_t space;
     volatile uint8_t buffer[BUFFER_LENGTH];
 }circleBuffer;
 
@@ -40,7 +39,6 @@ extern uint8_t newCmd;
 static circleBuffer rxBuffer = {
 	.head = 0,
 	.tail = 0,
-	.space = BUFFER_LENGTH
 };
 
 static uint8_t pushToBuffer(circleBuffer *b, const uint8_t inChar);
@@ -67,10 +65,10 @@ void InterfaceWriteToDataOutputHAL(uint8_t * pTxData, uint32_t length){
 	#if RASPBERRY_PI
 	static uint8_t prevData[256];
 
-	if(memcmp(prevData, pTxData) == 0){
-		fwrite(prevData, sizeof(uint8_t), length, stdout);
-	}
-	memcpy(prevData, pTxData, length);
+//	if(memcmp(prevData, pTxData) == 0){
+//		fwrite(prevData, sizeof(uint8_t), length, stdout);
+//	}
+//	memcpy(prevData, pTxData, length);
 
 	fwrite(pTxData, sizeof(uint8_t), length, stdout);
 	fflush(stdout);
@@ -108,12 +106,7 @@ void InterfaceWriteToLogHAL(uint8_t *txStr, uint16_t length){
 }
 
 uint8_t InterfacePopFromInputBufferHAL(uint8_t* rxByte){
-	if(popFromBuffer(&rxBuffer, rxByte)){
-		return 1;
-	}
-	else{
-		return 0;
-	}
+	return popFromBuffer(&rxBuffer, rxByte);
 }
 
 uint8_t InterfacePushToInputBufferHAL(char rxChar){

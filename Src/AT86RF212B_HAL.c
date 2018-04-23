@@ -239,58 +239,6 @@ void AT86RF212B_ReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t s
 #endif
 }
 
-void AT86RF212B_StartReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t size){
-#if RASPBERRY_PI
-	digitalWrite(SPI_NSS_PIN, LOW);
-	if(size > 0){
-		wiringPiSPIDataRW(SPI_CHANNEL, pTxData, size);
-		memcpy(pRxData, pTxData, size);
-	}
-#endif
-
-#if STM32
-	HAL_GPIO_WritePin(SPI_NSS_PORT, SPI_NSS_PIN, GPIO_PIN_RESET);
-	if(size > 0){
-		HAL_SPI_TransmitReceive(&hspi , pTxData, pRxData, size, timeout);
-		//TODO: This probably needs to be changed, could lock up here.
-		while(hspi.State == HAL_SPI_STATE_BUSY);
-	}
-#endif
-}
-
-void AT86RF212B_ContinueReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t size){
-#if RASPBERRY_PI
-	wiringPiSPIDataRW(SPI_CHANNEL, pTxData, size);
-	memcpy(pRxData, pTxData, size);
-#endif
-
-#if STM32
-	HAL_SPI_TransmitReceive(&hspi , pTxData, pRxData, size, timeout);
-	//TODO: This probably needs to be changed, could lock up here.
-	while(hspi.State == HAL_SPI_STATE_BUSY);
-#endif
-}
-
-void AT86RF212B_StopReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t size){
-#if RASPBERRY_PI
-	if(size > 0){
-		wiringPiSPIDataRW(SPI_CHANNEL, pTxData, size);
-		digitalWrite(SPI_NSS_PIN, HIGH);
-		memcpy(pRxData, pTxData, size);
-	}
-	digitalWrite(SPI_NSS_PIN, HIGH);
-#endif
-
-#if STM32
-	if(size > 0){
-		HAL_SPI_TransmitReceive(&hspi , pTxData, pRxData, size, timeout);
-		//TODO: This probably needs to be changed, could lock up here.
-		while(hspi.State == HAL_SPI_STATE_BUSY);
-	}
-	HAL_GPIO_WritePin(SPI_NSS_PORT, SPI_NSS_PIN, GPIO_PIN_SET);
-#endif
-}
-
 #if RASPBERRY_PI
 void HAL_Callback(){
 	AT86RF212B_ISR_Callback();

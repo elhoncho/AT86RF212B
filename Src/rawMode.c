@@ -9,6 +9,7 @@
 #include "AT86RF212B.h"
 #include "AT86RF212B_Constants.h"
 #include "MainController.h"
+#include "errors_and_logging.h"
 #include "../Settings/AT86RF212B_Settings.h"
 #include "../Settings/TerminalSettings.h"
 
@@ -35,43 +36,38 @@ void RawModeOpen(){
 
 void RawModeMain(){
 
-	static uint8_t txData[AT86RF212B_MAX_DATA];
+	uint8_t txData[AT86RF212B_MAX_DATA];
 	uint8_t i = 0;
 	uint8_t tmpChar;
+	uint8_t keepReading = 1;
+
+	//Pull Data off buffer
 	for(i = 0; i < AT86RF212B_MAX_DATA; i++){
 		uint8_t bufferStatus = InterfacePopFromInputBufferHAL(&tmpChar);
-		if(bufferStatus == 0){
-			//Buffer empty
-			if(i){
-				//Break out of loop and send txData
-				break;
-			}
-			else{
-				InterfaceReadInput();
-				return;
-			}
-		}
-		else if(bufferStatus == 1){
-			if(i < AT86RF212B_MAX_DATA-1){
-				txData[i] = tmpChar;
-			}
-			else if(i == AT86RF212B_MAX_DATA-1){
-				//Buffer not empty
-				//Send current packet length is i+1 because i is at a 0 offset
-				AT86RF212B_TxData(txData, i+1, 0);
 
-				//Continue clearing buffer
-				RawModeMain();
-				return;
-			}
+		//Buffer is empty
+		if(bufferStatus == 0){
+			keepReading = 0;
+			break;
+		}
+		//Buffer is filling up
+		else if(bufferStatus == 1){
+			txData[i] = tmpChar;
 		}
 	}
 
 	if(i){
 		AT86RF212B_TxData(txData, i, 0);
-		if(MainControllerGetMode() == MODE_RAW_RX_TX){
-			AT86RF212B_PhyStateChange(RX_AACK_ON);
-		}
+	}
+
+	if(keepReading){
+		RawModeMain();
+		return;
+	}
+
+	//Change state depending on mode
+	if(MainControllerGetMode() == MODE_RAW_RX_TX){
+		AT86RF212B_PhyStateChange(RX_AACK_ON);
 	}
 	InterfaceReadInput();
 	return;
