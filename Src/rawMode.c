@@ -58,7 +58,7 @@ void RawModeMain(){
 			else if(i == AT86RF212B_MAX_DATA-1){
 				//Buffer not empty
 				//Send current packet length is i+1 because i is at a 0 offset
-				AT86RF212B_TxData(txData, i+1);
+				AT86RF212B_TxData(txData, i+1, 0);
 
 				//Continue clearing buffer
 				RawModeMain();
@@ -68,7 +68,7 @@ void RawModeMain(){
 	}
 
 	if(i){
-		AT86RF212B_TxData(txData, i);
+		AT86RF212B_TxData(txData, i, 0);
 		if(MainControllerGetMode() == MODE_RAW_RX_TX){
 			AT86RF212B_PhyStateChange(RX_AACK_ON);
 		}
