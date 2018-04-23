@@ -158,9 +158,6 @@ void AT86RF212B_Main(){
 				AT86RF212B_FrameRead();
 				nextBeaconUpdate = GeneralGetMs() + 2000;
 			}
-			else if(irqState & (TRX_IRQ_RX_START)){
-				nextBeaconUpdate = GeneralGetMs() + 2000;
-			}
 			break;
 		case TX_ARET_ON:
 			//Send Beacon
@@ -240,79 +237,66 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length){
 	static uint8_t sequenceNumber = 0;
 	uint8_t* tmpStr[40];
 
-	uint32_t startTime = GeneralGetMs();
-
 	UpdateState();
 
 	if(config.state != TX_ARET_ON){
 		AT86RF212B_PhyStateChange(TX_ARET_ON);
 		AT86RF212B_TxData(frame, length);
+		return;
 	}
 	else if(config.state == TX_ARET_ON){
 		if(length > AT86RF212B_MAX_DATA){
-			if(logging){
-				ASSERT(0);
-				LOG(LOG_LVL_ERROR, "Frame Too Large\r\n");
-			}
+//			if(logging){
+//				ASSERT(0);
+//				LOG(LOG_LVL_ERROR, "Frame Too Large\r\n");
+//			}
 			return;
 		}
 		else if(length == 0){
-			if(logging){
-				ASSERT(0);
-				LOG(LOG_LVL_ERROR, "No data to send\r\n");
-			}
+//			if(logging){
+//				ASSERT(0);
+//				LOG(LOG_LVL_ERROR, "No data to send\r\n");
+//			}
 			return;
 		}
 
 		AT86RF212B_FrameWrite(frame, length, sequenceNumber);
 		sequenceNumber++;
 
-		if(logging){
-			sprintf((char*)tmpStr, "---------------------\r\nTime to buffer: %lu\r\n", GeneralGetMs() - startTime);
-			LOG(LOG_LVL_ERROR, (char*)tmpStr);
-			startTime = GeneralGetMs();
-		}
-
 		//Wait until done transmitting data
 		//TODO: This may affect speed
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
 
-		if(logging){
-			sprintf((char*)tmpStr, "Time to end of tx: %lu\r\n", GeneralGetMs() - startTime);
-			LOG(LOG_LVL_ERROR, (char*)tmpStr);
-			startTime = GeneralGetMs();
-		}
-
-		if(logging){
-			uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
-			switch(txStatus){
-				case TRAC_SUCCESS:
-					LOG(LOG_LVL_DEBUG, "Frame TX Success\r\n");
-					break;
-				case TRAC_SUCCESS_DATA_PENDING:
-					LOG(LOG_LVL_DEBUG, "Frame TX Success with data pending\r\n");
-					break;
-				case TRAC_CHANNEL_ACCESS_FAILURE:
-					LOG(LOG_LVL_DEBUG, "Frame Tx Fail! Channel Access Failure\r\n");
-					break;
-				case TRAC_NO_ACK:
-					LOG(LOG_LVL_DEBUG, "Frame TX Fail! No ACK received\r\n");
-					break;
-				case TRAC_INVALID:
-					LOG(LOG_LVL_DEBUG, "Frame TX Fail! Invalid Frame\r\n");
-					break;
-				default:
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Frame Tx Fail! Invalid TX State!\r\n");
-					break;
-			}
-		}
+//		if(logging){
+//			uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
+//			switch(txStatus){
+//				case TRAC_SUCCESS:
+//					LOG(LOG_LVL_DEBUG, "Frame TX Success\r\n");
+//					break;
+//				case TRAC_SUCCESS_DATA_PENDING:
+//					LOG(LOG_LVL_DEBUG, "Frame TX Success with data pending\r\n");
+//					break;
+//				case TRAC_CHANNEL_ACCESS_FAILURE:
+//					LOG(LOG_LVL_DEBUG, "Frame Tx Fail! Channel Access Failure\r\n");
+//					break;
+//				case TRAC_NO_ACK:
+//					LOG(LOG_LVL_DEBUG, "Frame TX Fail! No ACK received\r\n");
+//					break;
+//				case TRAC_INVALID:
+//					LOG(LOG_LVL_DEBUG, "Frame TX Fail! Invalid Frame\r\n");
+//					break;
+//				default:
+//					ASSERT(0);
+//					LOG(LOG_LVL_ERROR, "Frame Tx Fail! Invalid TX State!\r\n");
+//					break;
+//			}
+//		}
 	}
 	else{
-		if(logging){
-			ASSERT(0);
-			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
-		}
+//		if(logging){
+//			ASSERT(0);
+//			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+//		}
 	}
 }
 
@@ -523,13 +507,10 @@ static void AT86RF212B_FrameWrite(uint8_t * pTxData, uint8_t length, uint8_t seq
 	pTxHeader[4] = sequenceNumber;
 
 	AT86RF212B_StartReadAndWriteHAL(pTxHeader, pRxHeader, 9);
-
 	AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_HIGH);
 	AT86RF212B_StopReadAndWriteHAL(pTxData, pRxData, nLength);
 	AT86RF212B_Delay(AT86RF212B_t7);
 	AT86RF212B_WritePinHAL(AT86RF212B_PIN_SLP_TR, AT86RF212B_PIN_STATE_LOW);
-
-	sequenceNumber += 1;
 
 	if(logging){
 		LOG(LOG_LVL_INFO, "\r\nData Sent: \r\n");
