@@ -65,13 +65,19 @@ void InterfaceReadInput(){
 
 void InterfaceWriteToDataOutputHAL(uint8_t * pTxData, uint32_t length){
 	#if RASPBERRY_PI
+	static uint8_t prevData[256];
+
+	if(memcmp(prevData, pTxData) == 0){
+		fwrite(prevData, sizeof(uint8_t), length, stdout);
+	}
+	memcpy(prevData, pTxData, length);
+
 	fwrite(pTxData, sizeof(uint8_t), length, stdout);
 	fflush(stdout);
 	#endif
 
 	#if STM32
 	if(hUsbDeviceHS.dev_state == USBD_STATE_CONFIGURED){
-
 		while(CDC_Transmit_HS(pTxData, length) == USBD_BUSY);
 	}
 	#endif
