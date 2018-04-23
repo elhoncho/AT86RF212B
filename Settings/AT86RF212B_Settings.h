@@ -30,11 +30,11 @@
 //Enable TX CRC generation 1 = on 0 = off
 #define AT86RF212B_TX_CRC 			1
 //Sets the number of attempts to retransmit a frame when it was not acknowledged by the recipient (0x00 - 0x07)
-#define AT86RF212B_MAX_FRAME_RETRIES 0X03
+#define AT86RF212B_MAX_FRAME_RETRIES 0X00
 //Switches between CSMA-CA Listen Before Talk algorithm within TX_ARET mode (0 [CSMA-CA] or 1 [LBT])
 #define AT86RF212B_CSMA_LBT_MODE 	 0x00
 //Number of retries in TX_ARET mode to repeat the CSMA-CA procedure before the transaction gets cancled (0x00[no retries] - 0x05[five retries] or 0x07[immedate frame transmission withou breforming CSMA-CA])
-#define AT86RF212B_MAX_CSMA_RETRIES  0X04
+#define AT86RF212B_MAX_CSMA_RETRIES  0X00
 //Maximum backoff exponent in the CSMA-CA algorithm (0x00 - 0x08)
 #define AT86RF212B_MIN_BE 			0x05
 //Minimum backoff exponent in the CSMA-CA algorithm (MAX_BE-1 to MAX_BE or 0x00)
