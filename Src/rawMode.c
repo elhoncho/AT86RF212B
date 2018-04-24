@@ -56,8 +56,7 @@ void RawModeMain(){
 		}
 	}
 
-	//Will always be at least one because one iteration of the loop executes to check buffer
-	if(i>1){
+	if(i){
 		AT86RF212B_TxData(txData, i, 0);
 	}
 
