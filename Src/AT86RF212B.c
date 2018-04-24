@@ -283,42 +283,42 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t reTx){
 
 		uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
 
-		switch(txStatus){
-			case TRAC_SUCCESS:
-//				if(logging){
-//					LOG(LOG_LVL_DEBUG, "Frame TX Success\r\n");
-//				}
-				break;
-			case TRAC_SUCCESS_DATA_PENDING:
-//				if(logging){
-//					LOG(LOG_LVL_DEBUG, "Frame TX Success with data pending\r\n");
-//				}
-				break;
-			case TRAC_CHANNEL_ACCESS_FAILURE:
-//				if(logging){
-//					LOG(LOG_LVL_DEBUG, "Frame Tx Fail! Channel Access Failure\r\n");
-//				}
-				AT86RF212B_TxData(frame, length, 1);
-				break;
-			case TRAC_NO_ACK:
-//				if(logging){
-//					LOG(LOG_LVL_DEBUG, "Frame TX Fail! No ACK received\r\n");
-//				}
-				AT86RF212B_TxData(frame, length, 1);
-				break;
-			case TRAC_INVALID:
-//				if(logging){
-//					LOG(LOG_LVL_DEBUG, "Frame TX Fail! Invalid Frame\r\n");
-//				}
-				AT86RF212B_TxData(frame, length, 1);
-				break;
-			default:
-				ASSERT(0);
-//				if(logging){
-//					LOG(LOG_LVL_ERROR, "Frame Tx Fail! Invalid TX State!\r\n");
-//				}
-				break;
-		}
+//		switch(txStatus){
+//			case TRAC_SUCCESS:
+////				if(logging){
+////					LOG(LOG_LVL_DEBUG, "Frame TX Success\r\n");
+////				}
+//				break;
+//			case TRAC_SUCCESS_DATA_PENDING:
+////				if(logging){
+////					LOG(LOG_LVL_DEBUG, "Frame TX Success with data pending\r\n");
+////				}
+//				break;
+//			case TRAC_CHANNEL_ACCESS_FAILURE:
+////				if(logging){
+////					LOG(LOG_LVL_DEBUG, "Frame Tx Fail! Channel Access Failure\r\n");
+////				}
+//				AT86RF212B_TxData(frame, length, 1);
+//				break;
+//			case TRAC_NO_ACK:
+////				if(logging){
+////					LOG(LOG_LVL_DEBUG, "Frame TX Fail! No ACK received\r\n");
+////				}
+//				AT86RF212B_TxData(frame, length, 1);
+//				break;
+//			case TRAC_INVALID:
+////				if(logging){
+////					LOG(LOG_LVL_DEBUG, "Frame TX Fail! Invalid Frame\r\n");
+////				}
+//				AT86RF212B_TxData(frame, length, 1);
+//				break;
+//			default:
+//				ASSERT(0);
+////				if(logging){
+////					LOG(LOG_LVL_ERROR, "Frame Tx Fail! Invalid TX State!\r\n");
+////				}
+//				break;
+//		}
 	}
 	else{
 //		if(logging){
