@@ -161,4 +161,5 @@ void PhyStateToPllOn();
 void AT86RF212B_FrameRead();
 void AT86RF212B_PhyStateChange(uint8_t newState);
 void AT86RF212B_ToggleBeacon();
+uint8_t AT86RF212B_GetState();
 #endif /* MYINC_AT86RF212B_H_ */

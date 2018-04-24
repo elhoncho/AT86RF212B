@@ -67,7 +67,9 @@ void RawModeMain(){
 
 	//Change state depending on mode
 	if(MainControllerGetMode() == MODE_RAW_RX_TX){
-		AT86RF212B_PhyStateChange(RX_AACK_ON);
+		if(AT86RF212B_GetState() != RX_AACK_ON){
+			AT86RF212B_PhyStateChange(RX_AACK_ON);
+		}
 	}
 	InterfaceReadInput();
 	return;

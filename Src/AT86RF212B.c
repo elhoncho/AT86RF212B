@@ -118,6 +118,10 @@ static void AT86RF212B_SetRegisters(){
 	AT86RF212B_PhySetChannel();
 }
 
+uint8_t AT86RF212B_GetState(){
+	return config.state;
+}
+
 void AT86RF212B_ISR_Callback(){
 	interupt = 1;
 }
