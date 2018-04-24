@@ -17,6 +17,8 @@
 #include<usbd_cdc_if.h>
 #endif
 
+#define MAX_CONTINUOSU_CLEAR 5
+
 
 void RawModeOpen(){
 	SetEchoInput(ECHO_INPUT);
@@ -40,6 +42,7 @@ void RawModeMain(){
 	uint8_t i = 0;
 	uint8_t tmpChar;
 	uint8_t keepReading = 1;
+	static uint8_t roundsStarved = 0;
 
 	//Pull Data off buffer
 	for(i = 0; i < AT86RF212B_MAX_DATA; i++){
@@ -61,8 +64,14 @@ void RawModeMain(){
 	}
 
 	if(keepReading){
-		RawModeMain();
-		return;
+		if(roundsStarved < MAX_CONTINUOSU_CLEAR){
+			RawModeMain();
+			roundsStarved++;
+			return;
+		}
+		else{
+			roundsStarved = 0;
+		}
 	}
 
 	//Change state depending on mode
