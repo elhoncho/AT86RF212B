@@ -18,7 +18,7 @@
 #if STM32
 
 #define ECHO_INPUT 0
-#define TERMINAL_MODE MODE_RAW_TX
+#define TERMINAL_MODE MODE_RAW_RX
 
 #endif
 
