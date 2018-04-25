@@ -313,7 +313,7 @@ void ReadInputHAL(){
 #if RASPBERRY_PI
 	char inChar;
 	if(read(0, &inChar, 1) > 0){
-		PushToRxBufferHAL(inChar);
+		PushToInputBuffer(inChar);
 	}
 #endif
 

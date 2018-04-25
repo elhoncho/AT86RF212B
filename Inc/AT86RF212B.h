@@ -143,7 +143,6 @@ uint8_t AT86RF212B_RegRead(uint8_t reg);
 uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value);
 void AT86RF212B_ISR_Callback();
 void AT86RF212B_ID();
-void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t reTx);
 uint8_t AT86RF212B_BitRead (uint8_t addr, uint8_t mask, uint8_t pos);
 void AT86RF212B_FrameRead();
 void AT86RF212B_PhyStateChange(uint8_t newState);

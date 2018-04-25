@@ -8,6 +8,8 @@
 #include "../Inc/AT86RF212B_Constants.h"
 #include "../Inc/MainController.h"
 #include "../Inc/errors_and_logging.h"
+#include "../Inc/Buffer.h"
+#include "../Inc/AT86RF212B_HAL.h"
 #include "../Settings/AT86RF212B_Settings.h"
 #include "../Settings/TerminalSettings.h"
 
@@ -35,42 +37,34 @@ void RawModeOpen(){
 
 
 void RawModeMain(){
-
-	uint8_t txData[AT86RF212B_MAX_DATA];
-	uint8_t i = 0;
+	uint8_t dataToSend = 0;
 	uint8_t tmpChar;
-	uint8_t keepReading = 1;
+	uint8_t radioMode;
 
-	//Pull Data off buffer
-	for(i = 0; i < AT86RF212B_MAX_DATA; i++){
-		uint8_t bufferStatus = PopFromRxBufferHAL(&tmpChar);
+	//Push data to txBuffer
+	while(PopFromInputBuffer(&tmpChar)){
+		//TODO: May cause loss of data if the pop is successful but the push fails
+		PushToTxBuffer(tmpChar);
+		dataToSend = 1;
+	}
 
-		//Buffer is empty
-		if(bufferStatus == 0){
-			keepReading = 0;
-			break;
+	radioMode = MainControllerGetMode();
+
+	if(dataToSend){
+		//If there is data to be sent switch radio to tx mode
+		if(radioMode == MODE_RAW_RX_TX || radioMode == MODE_RAW_TX){
+			if(AT86RF212B_GetState() != TX_ARET_ON){
+				AT86RF212B_PhyStateChange(TX_ARET_ON);
+			}
 		}
-		//Buffer is filling up
-		else if(bufferStatus == 1){
-			txData[i] = tmpChar;
-		}
 	}
-
-	if(i){
-		AT86RF212B_TxData(txData, i, 0);
-	}
-
-	if(keepReading){
-		RawModeMain();
-		return;
-	}
-
-	//Change state depending on mode
-	if(MainControllerGetMode() == MODE_RAW_RX_TX){
+	//No data to be sent make sure the radio is in RX mode
+	else if(radioMode == MODE_RAW_RX_TX){
 		if(AT86RF212B_GetState() != RX_AACK_ON){
 			AT86RF212B_PhyStateChange(RX_AACK_ON);
 		}
 	}
+
 	ReadInputHAL();
 	return;
 }

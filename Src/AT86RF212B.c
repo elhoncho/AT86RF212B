@@ -8,6 +8,7 @@
 #include "../Inc/errors_and_logging.h"
 #include "../Inc/AT86RF212B_Regesters.h"
 #include "../Inc/AT86RF212B_Constants.h"
+#include "../Inc/Buffer.h"
 #include "../Settings/AT86RF212B_Settings.h"
 #include "../Settings/TerminalSettings.h"
 
@@ -35,6 +36,7 @@ static void 	AT86RF212B_WrongStateError();
 static void 	AT86RF212B_SetRegisters();
 static void 	AT86RF212B_TRX_Reset();
 //static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
+static void 	AT86RF212B_TxData();
 
 //-----------External Variables--------------------//
 //extern uint8_t logging;
@@ -140,6 +142,7 @@ void AT86RF212B_Main(){
 			}
 			break;
 		case TX_ARET_ON:
+			AT86RF212B_TxData();
 			break;
 		case BUSY_RX_AACK:
 			break;
@@ -161,98 +164,37 @@ void AT86RF212B_Main(){
 	}
 }
 
-//Length is the length of the data to send frame = 1234abcd length = 8, no adding to the length for the header that gets added later
-void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t reTx){
+static void AT86RF212B_TxData(){
 	static uint8_t sequenceNumber = 0;
-	static uint32_t reTxAttempt = 0;
+	uint8_t frame[128];
+	uint8_t txByte = 0;
+	uint8_t i;
 
 	UpdateState();
 
 	if(config.state != TX_ARET_ON){
 		AT86RF212B_PhyStateChange(TX_ARET_ON);
-		AT86RF212B_TxData(frame, length, reTx);
+		AT86RF212B_TxData();
 		return;
 	}
 	else if(config.state == TX_ARET_ON){
-		if(length > AT86RF212B_MAX_DATA){
-//			if(logging){
-//				ASSERT(0);
-//				LOG(LOG_LVL_ERROR, "Frame Too Large\r\n");
-//			}
-			return;
-		}
-		else if(length == 0){
-//			if(logging){
-//				ASSERT(0);
-//				LOG(LOG_LVL_ERROR, "No data to send\r\n");
-//			}
-			return;
-		}
-
-
-		if(reTx == 0){
-			AT86RF212B_FrameWrite(frame, length, sequenceNumber);
-			sequenceNumber++;
-		}
-		else{
-			//TODO: Something is wrong here, it never gets an ACK when this is initiated (bumped from 20 to 2000 and did not run into it anymore)
-			reTxAttempt++;
-			if(reTxAttempt >= 20){
-				reTxAttempt = 0;
-				return;
+		i = 0;
+		while(PopFromTxBuffer(&txByte)){
+			frame[i] = txByte;
+			i++;
+			if(i == AT86RF212B_MAX_DATA){
+				break;
 			}
-			AT86RF212B_FrameWrite(frame, length, sequenceNumber-1);
+		}
 
+		if(i){
+			AT86RF212B_FrameWrite(frame, i, sequenceNumber);
+			sequenceNumber++;
 		}
 
 		//Wait until done transmitting data
 		//TODO: This may affect speed
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
-
-//		uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
-
-//		switch(txStatus){
-//			case TRAC_SUCCESS:
-////				if(logging){
-////					LOG(LOG_LVL_DEBUG, "Frame TX Success\r\n");
-////				}
-//				break;
-//			case TRAC_SUCCESS_DATA_PENDING:
-////				if(logging){
-////					LOG(LOG_LVL_DEBUG, "Frame TX Success with data pending\r\n");
-////				}
-//				break;
-//			case TRAC_CHANNEL_ACCESS_FAILURE:
-////				if(logging){
-////					LOG(LOG_LVL_DEBUG, "Frame Tx Fail! Channel Access Failure\r\n");
-////				}
-//				AT86RF212B_TxData(frame, length, 1);
-//				break;
-//			case TRAC_NO_ACK:
-////				if(logging){
-////					LOG(LOG_LVL_DEBUG, "Frame TX Fail! No ACK received\r\n");
-////				}
-//				AT86RF212B_TxData(frame, length, 1);
-//				break;
-//			case TRAC_INVALID:
-////				if(logging){
-////					LOG(LOG_LVL_DEBUG, "Frame TX Fail! Invalid Frame\r\n");
-////				}
-//				AT86RF212B_TxData(frame, length, 1);
-//				break;
-//			default:
-//				ASSERT(0);
-////				if(logging){
-////					LOG(LOG_LVL_ERROR, "Frame Tx Fail! Invalid TX State!\r\n");
-////				}
-//				break;
-//		}
-	}
-	else{
-//		if(logging){
-//			ASSERT(0);
-//			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
-//		}
 	}
 }
 

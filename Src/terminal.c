@@ -57,7 +57,6 @@ static void WriteRegister(char *arg1, char *arg2);
 static void GetIDs(char *arg1, char *arg2);
 static void TestBit(char *arg1, char *arg2);
 static void ReadFrame(char *arg1, char *arg2);
-static void WriteFrame(char *arg1, char *arg2);
 static void RawModeRx(char *arg1, char *arg2);
 static void RawModeTx(char *arg1, char *arg2);
 static void RawModeRxTx(char *arg1, char *arg2);
@@ -73,7 +72,6 @@ static const struct commandStruct commands[] ={
 	{"id", &GetIDs, "get id's"},
 	{"bt", &TestBit, "Test a bit of a reg"},
 	{"rf", &ReadFrame, "Reads the frame buffer"},
-	{"tx", &WriteFrame, "Writes to the frame buffer"},
 	{"rmr", &RawModeRx, "Run in raw mode rx"},
 	{"rmt", &RawModeTx, "Run in raw mode tx"},
 	{"rmrt", &RawModeRxTx, "Run in raw mode rx/tx"},
@@ -100,10 +98,6 @@ static void RawModeRxTx(char *arg1, char *arg2){
 
 static void ReadFrame(char *arg1, char *arg2){
 	AT86RF212B_FrameRead();
-}
-
-static void WriteFrame(char *arg1, char *arg2){
-	AT86RF212B_TxData((uint8_t*)arg1, strlen(arg1), 0);
 }
 
 static void TestBit(char *arg1, char *arg2){
@@ -190,7 +184,7 @@ void TerminalRead(){
         arg[2][0] = '\0';
 
         i = 0;
-        while(PopFromRxBufferHAL(&tmpChar)){
+        while(PopFromRxBuffer(&tmpChar)){
             uint8_t len = strlen(arg[i]);
 
             //Don't store \r or \n or space or .
