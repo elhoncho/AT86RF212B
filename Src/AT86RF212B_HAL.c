@@ -9,9 +9,10 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "../Inc/AT86RF212B.h"
-#include "../Inc/errors_and_logging.h"
-#include "../Inc/terminal.h"
 #include "../Inc/AT86RF212B_HAL.h"
+
+#include "../Inc/ErrorsAndLogging.h"
+#include "../Inc/Terminal.h"
 #include "../Settings/AT86RF212B_Settings.h"
 #include "../Settings/HAL_Settings.h"
 

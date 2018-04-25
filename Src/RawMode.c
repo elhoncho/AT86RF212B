@@ -7,9 +7,9 @@
 #include "../Inc/AT86RF212B.h"
 #include "../Inc/AT86RF212B_Constants.h"
 #include "../Inc/MainController.h"
-#include "../Inc/errors_and_logging.h"
 #include "../Inc/Buffer.h"
 #include "../Inc/AT86RF212B_HAL.h"
+#include "../Inc/ErrorsAndLogging.h"
 #include "../Settings/AT86RF212B_Settings.h"
 #include "../Settings/TerminalSettings.h"
 

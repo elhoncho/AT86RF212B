@@ -10,6 +10,8 @@
 
 #define ASSERT(condition) (condition ? 0 : AssertError(__FILE__, __LINE__))
 
+#include<stdint.h>
+
 typedef enum{
 	LOG_LVL_INFO,
 	LOG_LVL_DEBUG,
@@ -17,6 +19,6 @@ typedef enum{
 }LOG_LVL;
 
 void LOG(LOG_LVL lvl, uint8_t * message);
-void AssertError(uint8_t * fileName, int lineNumber);
+void AssertError(uint8_t * fileName, uint8_t lineNumber);
 
 #endif /* MYINC_ERRORS_AND_LOGGING_H_ */

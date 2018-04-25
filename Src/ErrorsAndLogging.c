@@ -5,13 +5,14 @@
  *      Author: owner
  */
 
+#include "../Inc/ErrorsAndLogging.h"
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../Inc/errors_and_logging.h"
-#include "../Inc/terminal.h"
 #include "../Inc/AT86RF212B_HAL.h"
+#include "../Inc/Terminal.h"
 
 #define MIN_LOG_LVL LOG_LVL_INFO
 
@@ -23,7 +24,7 @@ void LOG(LOG_LVL lvl, uint8_t * message){
 	}
 }
 
-void AssertError(uint8_t * fileName, int lineNumber){
+void AssertError(uint8_t * fileName, uint8_t lineNumber){
 	uint8_t tmpStr[32];
 	sprintf((char*)tmpStr, "Error in file :");
 	LOG(LOG_LVL_ERROR, tmpStr);

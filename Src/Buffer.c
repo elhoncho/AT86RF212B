@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "../Inc/terminal.h"
 #include "../Settings/AT86RF212B_Settings.h"
 #include "../Inc/AT86RF212B_HAL.h"
+#include "../Inc/Terminal.h"
 #include "../Settings/HAL_Settings.h"
 
 static uint8_t echoInput = 0;
