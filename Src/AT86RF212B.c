@@ -168,7 +168,7 @@ static void AT86RF212B_TxData(){
 	static uint8_t sequenceNumber = 0;
 	uint8_t frame[128];
 	uint8_t txByte = 0;
-	uint8_t i;
+	uint8_t bytesToSend = 0;
 
 	UpdateState();
 
@@ -178,23 +178,21 @@ static void AT86RF212B_TxData(){
 		return;
 	}
 	else if(config.state == TX_ARET_ON){
-		i = 0;
 		while(PopFromTxBuffer(&txByte)){
-			frame[i] = txByte;
-			i++;
-			if(i == AT86RF212B_MAX_DATA){
+			frame[bytesToSend] = txByte;
+			bytesToSend++;
+			if(bytesToSend == AT86RF212B_MAX_DATA){
 				break;
 			}
 		}
 
-		if(i){
-			AT86RF212B_FrameWrite(frame, i, sequenceNumber);
+		if(bytesToSend){
+			AT86RF212B_FrameWrite(frame, bytesToSend, sequenceNumber);
 			sequenceNumber++;
+			//Wait until done transmitting data
+			//TODO: This may affect speed
+			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
 		}
-
-		//Wait until done transmitting data
-		//TODO: This may affect speed
-		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
 	}
 }
 

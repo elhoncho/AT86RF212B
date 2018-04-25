@@ -184,7 +184,7 @@ void TerminalRead(){
         arg[2][0] = '\0';
 
         i = 0;
-        while(PopFromRxBuffer(&tmpChar)){
+        while(PopFromInputBuffer(&tmpChar)){
             uint8_t len = strlen(arg[i]);
 
             //Don't store \r or \n or space or .
