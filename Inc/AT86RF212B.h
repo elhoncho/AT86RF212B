@@ -142,24 +142,10 @@ void AT86RF212B_Main();
 uint8_t AT86RF212B_RegRead(uint8_t reg);
 uint8_t AT86RF212B_RegWrite(uint8_t reg, uint8_t value);
 void AT86RF212B_ISR_Callback();
-
-//TODO: Remove this it should be static
 void AT86RF212B_ID();
-//TODO: Remove this it should be static
-void AT86RF212B_TRX_Reset();
-//TODO: Remove this it should be static
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t reTx);
-//TODO: Remove this it is a tmp function for testing only
-void AT86RF212B_TestSleep();
-//TODO: Remove this it should be static
 uint8_t AT86RF212B_BitRead (uint8_t addr, uint8_t mask, uint8_t pos);
-//TODO: Remove this it should be static
-void PhyStateToRxOn();
-//TODO: Remove this it should be static
-void PhyStateToPllOn();
-//TODO: Remove this it should be static
 void AT86RF212B_FrameRead();
 void AT86RF212B_PhyStateChange(uint8_t newState);
-void AT86RF212B_ToggleBeacon();
 uint8_t AT86RF212B_GetState();
 #endif /* MYINC_AT86RF212B_H_ */

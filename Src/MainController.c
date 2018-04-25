@@ -2,7 +2,6 @@
 #include "../Inc/terminal.h"
 #include "../Inc/AT86RF212B.h"
 #include "../Inc/AT86RF212B_HAL.h"
-#include "../Inc/generalHAL.h"
 #include "../Inc/RawMode.h"
 #include "../Inc/MainController.h"
 #include "../Settings/TerminalSettings.h"

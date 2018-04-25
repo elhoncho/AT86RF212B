@@ -13,18 +13,19 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "../Inc/interfaceHAL.h"
 #include "../Inc/terminal.h"
 #include "../Inc/AT86RF212B.h"
-#include "../Inc/generalHAL.h"
 #include "../Inc/errors_and_logging.h"
 #include "../Inc/AT86RF212B_Regesters.h"
 #include "../Inc/AT86RF212B_Constants.h"
+#include "../Inc/AT86RF212B_HAL.h"
 #include "../Inc/RawMode.h"
 #include "../Inc/MainController.h"
+#include "../Inc/Buffer.h"
 #include "../Settings/AT86RF212B_Settings.h"
 #include "../Settings/HAL_Settings.h"
 #include "../Settings/TerminalSettings.h"
+
 
 #if RASPBERRY_PI
 #include "../../main.h"
@@ -54,15 +55,13 @@ static void ToggelDebug(char *arg1, char *arg2);
 static void ReadRegister(char *arg1, char *arg2);
 static void WriteRegister(char *arg1, char *arg2);
 static void GetIDs(char *arg1, char *arg2);
-static void Reset(char *arg1, char *arg2);
-static void TestSleep(char *arg1, char *arg2);
 static void TestBit(char *arg1, char *arg2);
 static void ReadFrame(char *arg1, char *arg2);
 static void WriteFrame(char *arg1, char *arg2);
 static void RawModeRx(char *arg1, char *arg2);
 static void RawModeTx(char *arg1, char *arg2);
+static void RawModeRxTx(char *arg1, char *arg2);
 static void ExitProgram(char *arg1, char *arg2);
-static void ToggleBeacon(char *arg1, char *arg2);
 
 static const struct commandStruct commands[] ={
     {"clear", &CmdClear, "Clears the screen"},
@@ -72,24 +71,17 @@ static const struct commandStruct commands[] ={
 	{"rr", &ReadRegister, "Reads a register"},
 	{"rw", &WriteRegister, "Writes a value to a register"},
 	{"id", &GetIDs, "get id's"},
-	{"reset", &Reset, "reset from active state"},
-	{"sleep", &TestSleep, "Test sleep state"},
 	{"bt", &TestBit, "Test a bit of a reg"},
 	{"rf", &ReadFrame, "Reads the frame buffer"},
 	{"tx", &WriteFrame, "Writes to the frame buffer"},
 	{"rmr", &RawModeRx, "Run in raw mode rx"},
 	{"rmt", &RawModeTx, "Run in raw mode tx"},
+	{"rmrt", &RawModeRxTx, "Run in raw mode rx/tx"},
 	{"exit", &ExitProgram, "Exit the Program"},
-	{"beacon", &ToggleBeacon, "Toggles sending beacons"},
     {"",0,""} //End of commands indicator. Must be last.
 };
 
 //----------------Commands Functions------------------------//
-
-static void ToggleBeacon(char *arg1, char *arg2){
-	AT86RF212B_ToggleBeacon();
-}
-
 static void ExitProgram(char *arg1, char *arg2){
 	exit(0);
 }
@@ -100,6 +92,10 @@ static void RawModeTx(char *arg1, char *arg2){
 
 static void RawModeRx(char *arg1, char *arg2){
 	MainControllerSetMode(MODE_RAW_RX);
+}
+
+static void RawModeRxTx(char *arg1, char *arg2){
+	MainControllerSetMode(MODE_RAW_RX_TX);
 }
 
 static void ReadFrame(char *arg1, char *arg2){
@@ -114,14 +110,6 @@ static void TestBit(char *arg1, char *arg2){
 	char tmpStr[MAX_STR_LEN];
 	sprintf(tmpStr, "%i\r\n", AT86RF212B_BitRead(strtol(arg1, NULL, 16), 0, strtol(arg2, NULL, 10)));
 	TerminalWrite((uint8_t*)tmpStr);
-}
-
-static void TestSleep(char *arg1, char *arg2){
-	AT86RF212B_TestSleep();
-}
-
-static void Reset(char *arg1, char *arg2){
-	AT86RF212B_TRX_Reset();
 }
 
 static void GetIDs(char *arg1, char *arg2){
@@ -175,21 +163,13 @@ static void CmdClear(char *arg1, char *arg2){
 
 void TerminalOpen(){
 	AT86RF212B_PhyStateChange(TX_ARET_ON);
-	//TODO: Get this to run when the terminal is opened
     char tmpStr[MAX_STR_LEN];
     strcpy(tmpStr, "\033[2J\033[;H");
     TerminalWrite((uint8_t*)tmpStr);
-    strcpy(tmpStr,"Battle Control Online:");
+    strcpy(tmpStr,"Interactive Terminal Mode:\r\n");
     TerminalWrite((uint8_t*)tmpStr);
     strcpy(tmpStr,"\r\n>");
     TerminalWrite((uint8_t*)tmpStr);
-#if STM32
-    SetEchoInput(ECHO_INPUT);
-#endif
-
-#if RASPBERRY_PI
-    SetEchoInput(ECHO_INPUT);
-#endif
 }
 
 void TermianlClose(){
@@ -210,7 +190,7 @@ void TerminalRead(){
         arg[2][0] = '\0';
 
         i = 0;
-        while(InterfacePopFromInputBufferHAL(&tmpChar)){
+        while(PopFromRxBufferHAL(&tmpChar)){
             uint8_t len = strlen(arg[i]);
 
             //Don't store \r or \n or space or .
@@ -269,14 +249,10 @@ void TerminalRead(){
 }
 
 void TerminalWrite(uint8_t *txStr){
-	InterfaceWriteToLogHAL(txStr, strlen((char*)txStr));
+	WriteToOutputHAL(txStr, strlen((char*)txStr));
 }
 
 void TerminalMain(){
-	InterfaceReadInput();
+	ReadInputHAL();
     TerminalRead();
-#if STM32
-    //TODO: Probably not the best place for this function (allows for the USB to start receiving again)
-    CDC_Enable_USB_Packet();
-#endif
 }

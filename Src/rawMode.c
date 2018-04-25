@@ -45,7 +45,7 @@ void RawModeMain(){
 
 	//Pull Data off buffer
 	for(i = 0; i < AT86RF212B_MAX_DATA; i++){
-		uint8_t bufferStatus = InterfacePopFromInputBufferHAL(&tmpChar);
+		uint8_t bufferStatus = PopFromRxBufferHAL(&tmpChar);
 
 		//Buffer is empty
 		if(bufferStatus == 0){
@@ -73,6 +73,6 @@ void RawModeMain(){
 			AT86RF212B_PhyStateChange(RX_AACK_ON);
 		}
 	}
-	InterfaceReadInput();
+	ReadInputHAL();
 	return;
 }

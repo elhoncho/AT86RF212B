@@ -9,7 +9,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "../Inc/AT86RF212B.h"
-#include "../Inc/generalHAL.h"
 #include "../Inc/errors_and_logging.h"
 #include "../Inc/terminal.h"
 #include "../Inc/AT86RF212B_HAL.h"
@@ -63,6 +62,7 @@ void HAL_Callback();
 
 #endif
 
+//-----------------Implement changing of GPIO pin
 void AT86RF212B_WritePinHAL(uint8_t pin, uint8_t state){
 	uint16_t GPIO_PIN;
 
@@ -124,6 +124,7 @@ void AT86RF212B_WritePinHAL(uint8_t pin, uint8_t state){
 	return;
 }
 
+//-----------------Implement reading GPIO pin
 uint8_t AT86RF212B_ReadPinHAL(uint8_t pin){
 	uint16_t GPIO_PIN;
 
@@ -184,6 +185,7 @@ uint8_t AT86RF212B_ReadPinHAL(uint8_t pin){
 #endif
 }
 
+//-----------------Implement platform specific initialization
 //TODO: Change the returns from void to an indicator, that means the functions need to validate a successful operation or not
 void AT86RF212B_OpenHAL(uint32_t time_out){
 
@@ -213,16 +215,14 @@ void AT86RF212B_OpenHAL(uint32_t time_out){
 #endif
 }
 
-void AT86RF212B_CloseHAL(){
 
-}
-
-
+//-----------------Implement SPI read/write
+void AT86RF212B_SPIreadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t size){
 //Register = register to read
 //pTxData = pointer to the data to send
 //pRxValue = pointer to rx data array
 //size = amount of data to be sent and received
-void AT86RF212B_ReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t size){
+
 #if RASPBERRY_PI
 	digitalWrite(SPI_NSS_PIN, LOW);
 	wiringPiSPIDataRW(SPI_CHANNEL, pTxData, size);
@@ -239,6 +239,7 @@ void AT86RF212B_ReadAndWriteHAL(uint8_t * pTxData, uint8_t * pRxData, uint16_t s
 #endif
 }
 
+//-----------------Implement Interrupt Callback, need to call AT86RF212B_ISR_Callback() when an interrupt is detected
 #if RASPBERRY_PI
 void HAL_Callback(){
 	AT86RF212B_ISR_Callback();
@@ -254,305 +255,90 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 }
 #endif
 
-void AT86RF212B_Delay(uint8_t time, AT86RF212B_Config config){
-	switch(time){
-		case AT86RF212B_t7:
-			//t7 	SLP_TR pulse width
-			//    62.5 ns
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_t8:
-			//t8 	SPI idle time: SEL rising to falling edge
-			//    250 ns
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_t8a:
-			//t8a 	SPI idle time: SEL rising to falling edge
-			//    500 ns
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_t9:
-			//t9 	SCLK rising edge LSB to /SEL rising edge
-			//    250 ns
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_t10:
-			//t10 	Reset pulse width
-			//    625 ns
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_t12:
-			//t12 	AES core cycle time
-			//    24 탎
-			GeneralDelayUs(24);
-			break;
-		case AT86RF212B_t13:
-			//t13 	Dynamic frame buffer protection: IRQ latency
-			//    750 ns
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_tTR1:
-			//tTR1 	State transition from P_ON until CLKM is available
-			//    330 탎
+//-----------------Implement mili sec count
+uint32_t HALGetMs(uint32_t timeMs){
+#if RASPBERRY_PI
+	return millis();
+#endif
 
-			//However the datasheet (7.1.4.1) says 420 탎 typical and 1ms max
-			GeneralDelayMs(1);
-			break;
-		case AT86RF212B_tTR2:
-			//tTR2 	State transition from SLEEP to TRX_OFF
-			//    380 탎
-			GeneralDelayUs(380);
-			break;
-		case AT86RF212B_tTR3:
-			//tTR3 	State transition from TRX_OFF to SLEEP
-			//    35 CLKM cycles
+#if STM32
+	return HAL_GetTick();
+#endif
+}
 
-			//TODO: Implement this better
-			GeneralDelayUs(2);
-			break;
-		case AT86RF212B_tTR4:
-			//tTR4 	State transition from TRX_OFF to PLL_ON
-			//    110 탎
-			GeneralDelayUs(110);
-			break;
-		case AT86RF212B_tTR5:
-			//tTR5 	State transition from PLL_ON to TRX_OFF
-			//    1 탎
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_tTR6:
-			//tTR6 	State transition from TRX_OFF to RX_ON
-			//    110 탎
-			GeneralDelayUs(110);
-			break;
-		case AT86RF212B_tTR7:
-			//tTR7 	State transition from RX_ON to TRX_OFF
-			//    1 탎
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_tTR8:
-			//tTR8 	State transition from PLL_ON to RX_ON
-			//    1 탎
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_tTR9:
-			//tTR9 	State transition from RX_ON to PLL_ON
-			//    1 탎
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_tTR10:
-			//tTR10 	State transition from PLL_ON to BUSY_TX
-			//    1 symbol
+//-----------------Implement micro sec count
+uint32_t HALGetUs(uint32_t timeUs){
+#if RASPBERRY_PI
+	return micros();
+#endif
 
-			switch(config.phyMode){
-				case AT86RF212B_BPSK_20:
-					GeneralDelayUs(50);
-					break;
-				case AT86RF212B_BPSK_40:
-					GeneralDelayUs(25);
-					break;
-				case AT86RF212B_O_QPSK_100:
-				case AT86RF212B_O_QPSK_200:
-				case AT86RF212B_O_QPSK_400:
-					GeneralDelayUs(40);
-					break;
-				case AT86RF212B_O_QPSK_250:
-				case AT86RF212B_O_QPSK_500:
-				case AT86RF212B_O_QPSK_1000:
-					GeneralDelayUs(16);
-					break;
-				default:
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
-					break;
-			}
+#if STM32
+	//Start the counter
+	DWT->CTRL |= 1;
+	return DWT->CYCCNT;
+#endif
+}
 
-			break;
-		case AT86RF212B_tTR12:
-			//tTR12 	Transition from all states to TRX_OFF
-			//    1 탎
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_tTR13:
-			//tTR13 	State transition from RESET to TRX_OFF
-			//    26 탎
-			GeneralDelayUs(26);
-			break;
-		case AT86RF212B_tTR14:
-			//tTR14 	Transition from various states to PLL_ON
-			//    1 탎
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_tTR16:
-			//tTR16 	FTN calibration time
-			//    25 탎
-			GeneralDelayUs(25);
-			break;
-		case AT86RF212B_tTR20:
-			//tTR20 	PLL settling time on channel switch
-			//    11 탎
-			GeneralDelayUs(11);
-			break;
-		case AT86RF212B_tTR21:
-			//tTR21 	PLL CF calibration time
-			//    8 탎
-			GeneralDelayUs(8);
-			break;
-		case AT86RF212B_tTR25:
-			//tTR25 	RSSI update interval
-			//    32 탎 : BPSK20
-			//    24 탎 : BPSK40
-			//    8 탎 : OQPSK
+//-----------------Implement mili sec delay
+void HALDelayMs(uint32_t timeMs){
+#if RASPBERRY_PI
+	delay(timeMs);
+#endif
 
-			switch(config.phyMode){
-				case AT86RF212B_BPSK_20:
-					GeneralDelayUs(32);
-					break;
-				case AT86RF212B_BPSK_40:
-					GeneralDelayUs(24);
-					break;
-				case AT86RF212B_O_QPSK_100:
-				case AT86RF212B_O_QPSK_200:
-				case AT86RF212B_O_QPSK_250:
-				case AT86RF212B_O_QPSK_400:
-				case AT86RF212B_O_QPSK_500:
-				case AT86RF212B_O_QPSK_1000:
-					GeneralDelayUs(8);
-					break;
-				default:
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
-					break;
-			}
-			break;
-		case AT86RF212B_tTR26:
-			//tTR26 	ED measurement time
-			//    8 symbol : Low Data Rate Mode (LDRM) and manual measurement in High Data Rate Mode (HDRM)
-			//    2 symbol : automatic measurement in High Data Rate Mode (HDRM)
-
-			switch(config.phyMode){
-				case AT86RF212B_BPSK_20:
-					//    8 symbol
-					GeneralDelayUs(400);
-					break;
-				case AT86RF212B_BPSK_40:
-					//    8 symbol
-					GeneralDelayUs(200);
-					break;
-				case AT86RF212B_O_QPSK_100:
-					//    8 symbol
-					GeneralDelayUs(320);
-					break;
-				case AT86RF212B_O_QPSK_200:
-					//    2 symbol
-					GeneralDelayUs(80);
-					break;
-				case AT86RF212B_O_QPSK_250:
-					//    8 symbol
-					GeneralDelayUs(128);
-					break;
-				case AT86RF212B_O_QPSK_400:
-					//    2 symbol
-					GeneralDelayUs(80);
-					break;
-				case AT86RF212B_O_QPSK_500:
-					//    2 symbol
-					GeneralDelayUs(32);
-					break;
-				case AT86RF212B_O_QPSK_1000:
-					//    2 symbol
-					GeneralDelayUs(32);
-					break;
-				default:
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
-					break;
-			}
-			break;
-		case AT86RF212B_tTR28:
-			//tTR28 	CCA measurement time
-			//    8 symbol
-			switch(config.phyMode){
-				case AT86RF212B_BPSK_20:
-					GeneralDelayUs(400);
-					break;
-				case AT86RF212B_BPSK_40:
-					GeneralDelayUs(200);
-					break;
-				case AT86RF212B_O_QPSK_100:
-				case AT86RF212B_O_QPSK_200:
-				case AT86RF212B_O_QPSK_400:
-					GeneralDelayUs(320);
-					break;
-				case AT86RF212B_O_QPSK_250:
-				case AT86RF212B_O_QPSK_500:
-				case AT86RF212B_O_QPSK_1000:
-					GeneralDelayUs(128);
-					break;
-				default:
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
-					break;
-			}
-			break;
-		case AT86RF212B_tTR29:
-			//tTR29 	SR_RND_VALUE update time
-			//    1 탎
-			GeneralDelayUs(1);
-			break;
-		case AT86RF212B_tMSNC:
-			//tMSNC 	Minimum time to synchronize to a preamble and receive an SFD
-			//    2 symbol
-			switch(config.phyMode){
-				case AT86RF212B_BPSK_20:
-					GeneralDelayUs(100);
-					break;
-				case AT86RF212B_BPSK_40:
-					GeneralDelayUs(400);
-					break;
-				case AT86RF212B_O_QPSK_100:
-				case AT86RF212B_O_QPSK_200:
-				case AT86RF212B_O_QPSK_400:
-					GeneralDelayUs(80);
-					break;
-				case AT86RF212B_O_QPSK_250:
-				case AT86RF212B_O_QPSK_500:
-				case AT86RF212B_O_QPSK_1000:
-					GeneralDelayUs(32);
-					break;
-			}
-			break;
-		case AT86RF212B_tFrame:
-			//tMSNC 	Minimum time to synchronize to a preamble and receive an SFD
-			//    2 symbol
-			switch(config.phyMode){
-				case AT86RF212B_BPSK_20:
-					GeneralDelayMs(52);
-					break;
-				case AT86RF212B_BPSK_40:
-					GeneralDelayMs(26);
-					break;
-				case AT86RF212B_O_QPSK_100:
-				case AT86RF212B_O_QPSK_200:
-				case AT86RF212B_O_QPSK_400:
-					GeneralDelayMs(11);
-					break;
-				case AT86RF212B_O_QPSK_250:
-				case AT86RF212B_O_QPSK_500:
-				case AT86RF212B_O_QPSK_1000:
-					GeneralDelayUs(5);
-					break;
-				default:
-					ASSERT(0);
-					LOG(LOG_LVL_ERROR, "Unknown Phy Mode");
-					break;
-			}
-			break;
-		default:
-			ASSERT(0);
-			LOG(LOG_LVL_ERROR, "Unknown Time Mode");
-			break;
-			return;
-	}
+#if STM32
+	HAL_Delay(timeMs);
+#endif
 	return;
+}
+
+//-----------------Implement micro sec delay
+void HALDelayUs(uint32_t timeUs){
+#if RASPBERRY_PI
+	delayMicroseconds(timeUs);
+#endif
+
+#if STM32
+	//Clear the counter
+	DWT->CYCCNT = 0;
+	uint32_t stopTime = timeUs*(HAL_RCC_GetHCLKFreq()/1000000);
+	//Start the counter
+	DWT->CTRL |= 1;
+	while(DWT->CYCCNT < stopTime);
+#endif
+	return;
+}
+
+//-----------------Implement reading from hardware data input to the TX buffer
+void ReadInputHAL(){
+#if RASPBERRY_PI
+	char inChar;
+	if(read(0, &inChar, 1) > 0){
+		PushToRxBufferHAL(inChar);
+	}
+#endif
+
+#if STM32
+	CDC_Enable_USB_Packet();
+#endif
+}
+
+//-----------------Implement writing RX buffer to the hardware output
+void WriteToOutputHAL(uint8_t * pTxData, uint32_t length){
+	#if RASPBERRY_PI
+//	static uint8_t prevData[256];
+
+//	if(memcmp(prevData, pTxData) == 0){
+//		fwrite(prevData, sizeof(uint8_t), length, stdout);
+//	}
+//	memcpy(prevData, pTxData, length);
+
+	fwrite(pTxData, sizeof(uint8_t), length, stdout);
+	fflush(stdout);
+	#endif
+
+	#if STM32
+	if(hUsbDeviceHS.dev_state == USBD_STATE_CONFIGURED){
+		while(CDC_Transmit_HS(pTxData, length) == USBD_BUSY);
+	}
+	#endif
 }
