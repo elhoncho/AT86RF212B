@@ -13,6 +13,6 @@
 #define RASPBERRY_PI 1
 
 //Size of the circule buffers used to store incoming and outgoing data
-#define BUFFER_LENGTH 256
+#define RX_BUFFER_LENGTH 256
 
 #endif /* HAL_SETTINGS_H_ */

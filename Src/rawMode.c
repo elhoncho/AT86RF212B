@@ -4,8 +4,6 @@
  *  Created on: Feb 26, 2018
  *      Author: owner
  */
-
-#include "../Inc/interfaceHAL.h"
 #include "../Inc/AT86RF212B.h"
 #include "../Inc/AT86RF212B_Constants.h"
 #include "../Inc/MainController.h"
