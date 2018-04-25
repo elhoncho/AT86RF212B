@@ -240,7 +240,6 @@ static void AT86RF212B_SendBeacon(){
 void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t reTx){
 	static uint8_t sequenceNumber = 0;
 	static uint32_t reTxAttempt = 0;
-	uint8_t* tmpStr[40];
 
 	UpdateState();
 
@@ -285,7 +284,7 @@ void AT86RF212B_TxData(uint8_t * frame, uint8_t length, uint8_t reTx){
 		//TODO: This may affect speed
 		AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
 
-		uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
+//		uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
 
 //		switch(txStatus){
 //			case TRAC_SUCCESS:
