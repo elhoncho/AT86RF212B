@@ -63,7 +63,7 @@ void InterfaceReadInput(){
 
 void InterfaceWriteToDataOutputHAL(uint8_t * pTxData, uint32_t length){
 	#if RASPBERRY_PI
-	static uint8_t prevData[256];
+//	static uint8_t prevData[256];
 
 //	if(memcmp(prevData, pTxData) == 0){
 //		fwrite(prevData, sizeof(uint8_t), length, stdout);
@@ -89,8 +89,8 @@ void InterfaceWriteToLogHAL(uint8_t *txStr, uint16_t length){
 
 #if STM32
 	if(hUsbDeviceHS.dev_state == USBD_STATE_CONFIGURED){
-		if((strcmp(txStr, "\r") == 0) || (strcmp(txStr, "\n") == 0)){
-			sprintf(txStr, "\r\n");
+		if((strcmp((char*)txStr, "\r") == 0) || (strcmp((char*)txStr, "\n") == 0)){
+			sprintf((char*)txStr, "\r\n");
 			length = length +1;
 		}
 		//TODO: Fix this, if too much data too fast can lock up here
