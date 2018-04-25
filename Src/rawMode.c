@@ -48,6 +48,9 @@ void RawModeMain(){
 		dataToSend = 1;
 	}
 
+	while(PopFromRxBuffer(&tmpChar)){
+		WriteToOutputHAL(&tmpChar, 1);
+	}
 	radioMode = MainControllerGetMode();
 
 	if(dataToSend){

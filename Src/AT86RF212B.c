@@ -35,11 +35,11 @@ static void 	AT86RF212B_Delay(uint8_t time);
 static void 	AT86RF212B_WrongStateError();
 static void 	AT86RF212B_SetRegisters();
 static void 	AT86RF212B_TRX_Reset();
-//static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
+static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
 static void 	AT86RF212B_TxData();
 
 //-----------External Variables--------------------//
-//extern uint8_t logging;
+extern uint8_t logging;
 
 //------------Private Global Variables----------------//
 static AT86RF212B_Config config;
@@ -106,9 +106,9 @@ void AT86RF212B_Open(){
 }
 
 static void AT86RF212B_SetRegisters(){
-//	if(logging){
-//		LOG(LOG_LVL_DEBUG, "Registers initiated\r\n");
-//	}
+	if(logging){
+		LOG(LOG_LVL_DEBUG, "Registers initiated\r\n");
+	}
 	AT86RF212B_SetPhyMode();
 	AT86RF212B_PhySetChannel();
 }
@@ -155,10 +155,10 @@ void AT86RF212B_Main(){
 		case RX_ON_NOCLK:
 			break;
 		default:
-//			if(logging){
-//				ASSERT(0);
-//				LOG(LOG_LVL_ERROR, "Unknown state, changing to RX_ON\r\n");
-//			}
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, "Unknown state, changing to RX_ON\r\n");
+			}
 			AT86RF212B_PhyStateChange(RX_ON);
 			break;
 	}
@@ -264,19 +264,19 @@ static uint8_t 	AT86RF212B_FrameLengthRead(){
 	return pRxData[1];
 }
 
-//static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
-//	char tmpStr[20];
-//	int i = 0;
-//	for (i = 0; i < nLength; i++) {
-//		if (pData[i] < 32 || pData[i] > 126) {
-//			sprintf(tmpStr, "0x%02X : \r\n", pData[i]);
-//		} else {
-//			sprintf(tmpStr, "0x%02X : %c\r\n", pData[i], pData[i]);
-//		}
-//		LOG(LOG_LVL_INFO, tmpStr);
-//	}
-//	LOG(LOG_LVL_INFO, "\r\n");
-//}
+static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
+	char tmpStr[20];
+	int i = 0;
+	for (i = 0; i < nLength; i++) {
+		if (pData[i] < 32 || pData[i] > 126) {
+			sprintf(tmpStr, "0x%02X : \r\n", pData[i]);
+		} else {
+			sprintf(tmpStr, "0x%02X : %c\r\n", pData[i], pData[i]);
+		}
+		LOG(LOG_LVL_INFO, tmpStr);
+	}
+	LOG(LOG_LVL_INFO, "\r\n");
+}
 
 
 static void 	AT86RF212B_IrqInit (){
@@ -308,46 +308,46 @@ void AT86RF212B_FrameRead(){
 	length = AT86RF212B_FrameLengthRead();
 
 	if(length == 0){
-//		if(logging){
-//			ASSERT(0);
-//			LOG(LOG_LVL_ERROR, "No data on frame\r\n");
-//		}
+		if(logging){
+			ASSERT(0);
+			LOG(LOG_LVL_ERROR, "No data on frame\r\n");
+		}
 		//Enable preamble detector to start receiving again
 		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 		return;
 	}
 	else if(length > 127){
-//		if(logging){
-//			ASSERT(0);
-//			LOG(LOG_LVL_ERROR, "Frame too large\r\n");
-//		}
+		if(logging){
+			ASSERT(0);
+			LOG(LOG_LVL_ERROR, "Frame too large\r\n");
+		}
 		//Enable preamble detector to start receiving again
 		AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 		return;
 	}
 	else{
-//		if(logging){
-//			char tmpStr[20];
-//			sprintf(tmpStr, "Reading frame of size %i\r\n", length);
-//			LOG(LOG_LVL_DEBUG, tmpStr);
-//		}
+		if(logging){
+			char tmpStr[20];
+			sprintf(tmpStr, "Reading frame of size %i\r\n", length);
+			LOG(LOG_LVL_DEBUG, tmpStr);
+		}
 
 		AT86RF212B_SPIreadAndWriteHAL(pTxData, pRxData, length+3);
 	}
 
 	if(config.txCrc){
 		if(!AT86RF212B_BitRead(SR_RX_CRC_VALID)){
-//			if(logging){
-//				LOG(LOG_LVL_DEBUG, "CRC Failed\r\n");
-//			}
+			if(logging){
+				LOG(LOG_LVL_DEBUG, "CRC Failed\r\n");
+			}
 			//Enable preamble detector to start receiving again
 			AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
 			return;
 		}
 		else{
-//			if(logging){
-//				LOG(LOG_LVL_DEBUG, "CRC Passed\r\n");
-//			}
+			if(logging){
+				LOG(LOG_LVL_DEBUG, "CRC Passed\r\n");
+			}
 		}
 	}
 
@@ -363,16 +363,16 @@ void AT86RF212B_FrameRead(){
 		//ackReceived = 1;
 	}
 	else{
-//		if(logging){
-//			ASSERT(0);
-//			LOG(LOG_LVL_ERROR, "Unknown Frame Type\r\n");
-//		}
+		if(logging){
+			ASSERT(0);
+			LOG(LOG_LVL_ERROR, "Unknown Frame Type\r\n");
+		}
 	}
 
-//	if(logging){
-//		LOG(LOG_LVL_INFO, "Data Received\r\n");
-//		AT86RF212B_PrintBuffer(length+3, pRxData);
-//	}
+	if(logging){
+		LOG(LOG_LVL_INFO, "Data Received\r\n");
+		AT86RF212B_PrintBuffer(length+3, pRxData);
+	}
 
 	//Enable preamble detector to start receiving again
 	AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);
@@ -418,10 +418,10 @@ static void AT86RF212B_FrameWrite(uint8_t * pData, uint8_t length, uint8_t seque
 
 
 
-//	if(logging){
-//		LOG(LOG_LVL_INFO, "\r\nData Sent: \r\n");
-//		AT86RF212B_PrintBuffer(nLength, pTxData);
-//	}
+	if(logging){
+		LOG(LOG_LVL_INFO, "\r\nData Sent: \r\n");
+		AT86RF212B_PrintBuffer(nLength, pTxData);
+	}
 }
 
 
@@ -453,20 +453,20 @@ static void AT86RF212B_PowerOnReset(){
 
 		AT86RF212B_Delay(AT86RF212B_tTR13);
 
-//		if(logging){
-//			char tmpStr[32];
-//			sprintf(tmpStr, "IRQ Mask Reg: 0x%02X\r\n", AT86RF212B_RegRead(RG_IRQ_MASK));
-//			LOG(LOG_LVL_DEBUG, tmpStr);
-//		}
+		if(logging){
+			char tmpStr[32];
+			sprintf(tmpStr, "IRQ Mask Reg: 0x%02X\r\n", AT86RF212B_RegRead(RG_IRQ_MASK));
+			LOG(LOG_LVL_DEBUG, tmpStr);
+		}
 
 		/* AT86RF212::TRX_OFF */
 		StateChangeCheck(TRX_OFF);
 	}
 	else{
-//		if(logging){
-//			ASSERT(0);
-//			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
-//		}
+		if(logging){
+			ASSERT(0);
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
+		}
 		AT86RF212B_TRX_Reset();
 	}
 }
@@ -477,17 +477,17 @@ void AT86RF212B_ID(){
 	config.manid0 = AT86RF212B_RegRead(RG_MAN_ID_0);
 	config.manid1 = AT86RF212B_RegRead(RG_MAN_ID_1);
 
-//	if(logging){
-//		char tmpStr[32];
-//		sprintf(tmpStr, "Part ID: 0x%02X\r\n", config.partid);
-//		LOG(LOG_LVL_DEBUG, tmpStr);
-//		sprintf(tmpStr, "Version: 0x%02X\r\n", config.version);
-//		LOG(LOG_LVL_DEBUG, tmpStr);
-//		sprintf(tmpStr, "ManID0:  0x%02X\r\n", config.manid0);
-//		LOG(LOG_LVL_DEBUG, tmpStr);
-//		sprintf(tmpStr, "ManID1:  0x%02X\r\n", config.manid1);
-//		LOG(LOG_LVL_DEBUG, tmpStr);
-//	}
+	if(logging){
+		char tmpStr[32];
+		sprintf(tmpStr, "Part ID: 0x%02X\r\n", config.partid);
+		LOG(LOG_LVL_DEBUG, tmpStr);
+		sprintf(tmpStr, "Version: 0x%02X\r\n", config.version);
+		LOG(LOG_LVL_DEBUG, tmpStr);
+		sprintf(tmpStr, "ManID0:  0x%02X\r\n", config.manid0);
+		LOG(LOG_LVL_DEBUG, tmpStr);
+		sprintf(tmpStr, "ManID1:  0x%02X\r\n", config.manid1);
+		LOG(LOG_LVL_DEBUG, tmpStr);
+	}
 }
 
 static void AT86RF212B_TRX_Reset(){
@@ -511,19 +511,19 @@ static void AT86RF212B_TRX_Reset(){
 		AT86RF212B_SetRegisters();
 	}
 	else{
-//		if(logging){
-//			ASSERT(0);
-//			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: This is real bad\r\n");
-//		}
+		if(logging){
+			ASSERT(0);
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: This is real bad\r\n");
+		}
 	}
 }
 
 void AT86RF212B_PhyStateChange(uint8_t newState){
 	UpdateState();
 	if(config.state == P_ON){
-//		if(logging){
-//			LOG(LOG_LVL_DEBUG, "Power on startup beginning\r\n");
-//		}
+		if(logging){
+			LOG(LOG_LVL_DEBUG, "Power on startup beginning\r\n");
+		}
 		AT86RF212B_SetRegisters();
 		AT86RF212B_PhyStateChange(newState);
 	}
@@ -665,10 +665,10 @@ void AT86RF212B_PhyStateChange(uint8_t newState){
 }
 
 static void AT86RF212B_WrongStateError(){
-//	if(logging){
-//		ASSERT(0);
-//		LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
-//	}
+	if(logging){
+		ASSERT(0);
+		LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
+	}
 	AT86RF212B_TRX_Reset();
 }
 
@@ -680,10 +680,10 @@ static void AT86RF212B_PhySetChannel(){
 		AT86RF212B_BitWrite(SR_CC_NUMBER, 0x00);
 	}
 	else{
-//		if(logging){
-//			ASSERT(0);
-//			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
-//		}
+		if(logging){
+			ASSERT(0);
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function: Resetting\r\n");
+		}
 		AT86RF212B_TRX_Reset();
 	}
 }
@@ -743,10 +743,10 @@ static void AT86RF212B_SetPhyMode(){
 			config.gctxOffset = 2;
 			break;
 		default:
-//			if(logging){
-//				ASSERT(0);
-//				LOG(LOG_LVL_ERROR, "Unknown Phy Configuration\r\n");
-//			}
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, "Unknown Phy Configuration\r\n");
+			}
 			return;
 		}
 		AT86RF212B_BitWrite(SR_BPSK_OQPSK, config.useOQPSK);
@@ -785,10 +785,10 @@ static void AT86RF212B_SetPhyMode(){
 		AT86RF212B_RegWrite(RG_IEEE_ADDR_7, config.extAddr_63_56);
 	}
 	else{
-//		if(logging){
-//			ASSERT(0);
-//			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
-//		}
+		if(logging){
+			ASSERT(0);
+			LOG(LOG_LVL_ERROR, "Incorrect State to Run Function\r\n");
+		}
 	}
 	return;
 }
@@ -814,10 +814,10 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 	uint32_t timeout = HALGetMs()+maxTime;
 	while(!interupt){
 		if(HALGetMs() > timeout){
-//			if(logging){
-//				ASSERT(0);
-//				LOG(LOG_LVL_DEBUG, "Timeout while waiting for IRQ\r\n");
-//			}
+			if(logging){
+				ASSERT(0);
+				LOG(LOG_LVL_DEBUG, "Timeout while waiting for IRQ\r\n");
+			}
 			return;
 		}
 	}
@@ -827,38 +827,33 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 	irqState = AT86RF212B_RegRead(RG_IRQ_STATUS);
 
 	if(!(irqState & expectedIRQ)){
-//		if(logging){
-//			ASSERT(0);
-//			uint8_t tmpStr[20];
-//			sprintf((char *)tmpStr, "Wrong Interrupt: %02X\r\n", irqState);
-//			LOG(LOG_LVL_ERROR, (char *)tmpStr);
-//		}
+		if(logging){
+			ASSERT(0);
+			uint8_t tmpStr[20];
+			sprintf((char *)tmpStr, "Wrong Interrupt: %02X\r\n", irqState);
+			LOG(LOG_LVL_ERROR, (char *)tmpStr);
+		}
 		AT86RF212B_WaitForIRQ(expectedIRQ);
 	}
-//	else if(logging){
-//		LOG(LOG_LVL_DEBUG, "Expected IRQ received, exiting loop!\r\n");
-//	}
+	else if(logging){
+		LOG(LOG_LVL_DEBUG, "Expected IRQ received, exiting loop!\r\n");
+	}
 }
 
 static uint8_t StateChangeCheck(uint8_t newState){
 	UpdateState();
 
 	if(config.state != newState){
-//		if(logging){
-//			ASSERT(0);
-//			LOG(LOG_LVL_ERROR, "State Change Failed Trying Again\r\n");
-//		}
-
-		if(newState == PLL_ON){
-			AT86RF212B_PhyStateChange(PLL_ON);
+		if(logging){
+			ASSERT(0);
+			LOG(LOG_LVL_ERROR, "State Change Failed Trying Again\r\n");
 		}
-
 		return 0;
 	}
 	else{
-//		if(logging){
-//			LOG(LOG_LVL_DEBUG, "State Change Success!\r\n");
-//		}
+		if(logging){
+			LOG(LOG_LVL_DEBUG, "State Change Success!\r\n");
+		}
 		return 1;
 	}
 	return 0;
