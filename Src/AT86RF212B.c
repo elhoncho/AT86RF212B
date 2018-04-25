@@ -38,10 +38,10 @@ static void 	AT86RF212B_Delay(uint8_t time);
 static void 	AT86RF212B_WrongStateError();
 static void 	AT86RF212B_SetRegisters();
 static void 	AT86RF212B_SendBeacon();
-static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
+//static void 	AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData);
 
 //-----------External Variables--------------------//
-extern uint8_t logging;
+//extern uint8_t logging;
 
 //------------Private Global Variables----------------//
 static AT86RF212B_Config config;
@@ -398,19 +398,19 @@ static uint8_t 	AT86RF212B_FrameLengthRead(){
 	return pRxData[1];
 }
 
-static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
-	char tmpStr[20];
-	int i = 0;
-	for (i = 0; i < nLength; i++) {
-		if (pData[i] < 32 || pData[i] > 126) {
-			sprintf(tmpStr, "0x%02X : \r\n", pData[i]);
-		} else {
-			sprintf(tmpStr, "0x%02X : %c\r\n", pData[i], pData[i]);
-		}
-		LOG(LOG_LVL_INFO, tmpStr);
-	}
-	LOG(LOG_LVL_INFO, "\r\n");
-}
+//static void AT86RF212B_PrintBuffer(uint8_t nLength, uint8_t* pData) {
+//	char tmpStr[20];
+//	int i = 0;
+//	for (i = 0; i < nLength; i++) {
+//		if (pData[i] < 32 || pData[i] > 126) {
+//			sprintf(tmpStr, "0x%02X : \r\n", pData[i]);
+//		} else {
+//			sprintf(tmpStr, "0x%02X : %c\r\n", pData[i], pData[i]);
+//		}
+//		LOG(LOG_LVL_INFO, tmpStr);
+//	}
+//	LOG(LOG_LVL_INFO, "\r\n");
+//}
 
 
 static void 	AT86RF212B_IrqInit (){
