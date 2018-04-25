@@ -9,9 +9,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "errors_and_logging.h"
-#include "terminal.h"
-#include "interfaceHAL.h"
+#include "../Inc/errors_and_logging.h"
+#include "../Inc/terminal.h"
+#include "../Inc/interfaceHAL.h"
 
 #define MIN_LOG_LVL LOG_LVL_INFO
 
