@@ -579,6 +579,11 @@ void AT86RF212B_PhyStateChange(uint8_t newState){
 			AT86RF212B_Delay(AT86RF212B_tTR8);
 			StateChangeCheck(CMD_RX_AACK_ON);
 		}
+		/* AT86RF212::RX_AACK_ON */
+		else if(config.state ==  TX_ARET_ON){
+			AT86RF212B_PhyStateChange(PLL_ON);
+			AT86RF212B_PhyStateChange(RX_AACK_ON);
+		}
 		/* AT86RF212::BUSY_TX */
 		else if(IsStateTxBusy()){
 			AT86RF212B_BitWrite(SR_TRX_CMD, CMD_RX_AACK_ON);
