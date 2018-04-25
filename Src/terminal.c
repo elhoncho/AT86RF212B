@@ -9,19 +9,19 @@
  *           -make newCmd true when a command has been entered (usually when recieved a cr and or nl)
  */
 
-#include <interfaceHAL.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "terminal.h"
-#include "AT86RF212B.h"
-#include "generalHAL.h"
-#include "errors_and_logging.h"
-#include "AT86RF212B_Regesters.h"
-#include "AT86RF212B_Constants.h"
-#include "RawMode.h"
-#include "MainController.h"
+#include "../Inc/interfaceHAL.h"
+#include "../Inc/terminal.h"
+#include "../Inc/AT86RF212B.h"
+#include "../Inc/generalHAL.h"
+#include "../Inc/errors_and_logging.h"
+#include "../Inc/AT86RF212B_Regesters.h"
+#include "../Inc/AT86RF212B_Constants.h"
+#include "../Inc/RawMode.h"
+#include "../Inc/MainController.h"
 #include "../Settings/AT86RF212B_Settings.h"
 #include "../Settings/HAL_Settings.h"
 #include "../Settings/TerminalSettings.h"

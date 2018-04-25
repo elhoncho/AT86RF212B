@@ -1,10 +1,10 @@
-#include "terminal.h"
-#include "AT86RF212B.h"
-#include "AT86RF212B_HAL.h"
-#include "generalHAL.h"
-#include "RawMode.h"
 #include <stdint.h>
-#include "MainController.h"
+#include "../Inc/terminal.h"
+#include "../Inc/AT86RF212B.h"
+#include "../Inc/AT86RF212B_HAL.h"
+#include "../Inc/generalHAL.h"
+#include "../Inc/RawMode.h"
+#include "../Inc/MainController.h"
 #include "../Settings/TerminalSettings.h"
 
 static uint8_t AT86RF212B_Mode = TERMINAL_MODE;

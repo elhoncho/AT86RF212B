@@ -2,14 +2,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "generalHAL.h"
-#include "AT86RF212B.h"
-#include "interfaceHAL.h"
-#include "AT86RF212B_HAL.h"
-#include "MainController.h"
-#include "errors_and_logging.h"
-#include "AT86RF212B_Regesters.h"
-#include "AT86RF212B_Constants.h"
+#include "../Inc/generalHAL.h"
+#include "../Inc/AT86RF212B.h"
+#include "../Inc/interfaceHAL.h"
+#include "../Inc/AT86RF212B_HAL.h"
+#include "../Inc/MainController.h"
+#include "../Inc/errors_and_logging.h"
+#include "../Inc/AT86RF212B_Regesters.h"
+#include "../Inc/AT86RF212B_Constants.h"
 #include "../Settings/AT86RF212B_Settings.h"
 #include "../Settings/TerminalSettings.h"
 

@@ -8,7 +8,7 @@
 #ifndef AT86RF212B_INC_AT86RF212B_SETTINGS_H_
 #define AT86RF212B_INC_AT86RF212B_SETTINGS_H_
 
-#include "AT86RF212B.h"
+#include "../Inc/AT86RF212B.h"
 #include "HAL_Settings.h"
 
 //Settings

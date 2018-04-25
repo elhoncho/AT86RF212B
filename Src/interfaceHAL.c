@@ -9,9 +9,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "terminal.h"
-#include "interfaceHAL.h"
-#include "generalHAL.h"
+#include "../Inc/terminal.h"
+#include "../Inc/interfaceHAL.h"
+#include "../Inc/generalHAL.h"
 #include "../Settings/AT86RF212B_Settings.h"
 
 #if STM32

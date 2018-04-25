@@ -5,11 +5,11 @@
  *      Author: owner
  */
 
-#include "interfaceHAL.h"
-#include "AT86RF212B.h"
-#include "AT86RF212B_Constants.h"
-#include "MainController.h"
-#include "errors_and_logging.h"
+#include "../Inc/interfaceHAL.h"
+#include "../Inc/AT86RF212B.h"
+#include "../Inc/AT86RF212B_Constants.h"
+#include "../Inc/MainController.h"
+#include "../Inc/errors_and_logging.h"
 #include "../Settings/AT86RF212B_Settings.h"
 #include "../Settings/TerminalSettings.h"
 
