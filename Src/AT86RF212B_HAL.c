@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "../Inc/AT86RF212B.h"
 #include "../Inc/AT86RF212B_HAL.h"
 
@@ -87,7 +88,7 @@ void AT86RF212B_WritePinHAL(uint8_t pin, uint8_t state){
 			break;
 		default:
 			ASSERT(0);
-			LOG(LOG_LVL_ERROR, "Unknown Pin");
+			LOG(LOG_LVL_ERROR, (uint8_t*)"Unknown Pin");
 			return;
 	}
 	(state) ? digitalWrite(GPIO_PIN, HIGH) : digitalWrite(GPIO_PIN, LOW);
@@ -149,7 +150,7 @@ uint8_t AT86RF212B_ReadPinHAL(uint8_t pin){
 			break;
 		default:
 			ASSERT(0);
-			LOG(LOG_LVL_ERROR, "Unknown Pin");
+			LOG(LOG_LVL_ERROR, (uint8_t*)"Unknown Pin");
 			return 0;
 	}
 	return digitalRead(GPIO_PIN);

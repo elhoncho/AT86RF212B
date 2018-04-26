@@ -28,7 +28,7 @@ void AssertError(char* fileName, int lineNumber){
 	uint8_t tmpStr[32];
 	sprintf((char*)tmpStr, "Error in file :");
 	LOG(LOG_LVL_ERROR, tmpStr);
-	LOG(LOG_LVL_ERROR, fileName);
+	LOG(LOG_LVL_ERROR, (uint8_t*)fileName);
 	sprintf((char*)tmpStr, "\r\nOn line: %d\r\n", lineNumber);
 	LOG(LOG_LVL_ERROR, tmpStr);
 	//exit(0);

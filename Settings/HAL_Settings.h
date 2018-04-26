@@ -9,8 +9,8 @@
 #define HAL_SETTINGS_H_
 
 //Hardware back end, ONLY ONE SHOUDL BE TRUE
-#define STM32 1
-#define RASPBERRY_PI 0
+#define STM32 0
+#define RASPBERRY_PI 1
 
 //Size of the circle buffers used to store incoming and outgoing data
 #define BUFFER_LENGTH 256
