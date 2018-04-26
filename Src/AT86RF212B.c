@@ -167,6 +167,11 @@ static void AT86RF212B_TxData(){
 	uint8_t txByte = 0;
 	uint8_t bytesToSend = 0;
 
+	//TODO: This should be the constant AT86RF212B_MAX_DATA however the RaspberryPi is having problems transmitting larger frames
+	//and until that gets resolved a smaller max frame size is being used, this does effect speed as the higher data rates
+	//of the AT86RF212B only apply on the frame transmission, the headers of each framed are transmitted at a lower data rate
+	const uint8_t tmpMaxData = 64;
+
 	UpdateState();
 
 	if(config.state != TX_ARET_ON){
@@ -178,7 +183,7 @@ static void AT86RF212B_TxData(){
 		while(PopFromTxBuffer(&txByte)){
 			frame[bytesToSend] = txByte;
 			bytesToSend++;
-			if(bytesToSend == AT86RF212B_MAX_DATA){
+			if(bytesToSend == tmpMaxData){
 				break;
 			}
 		}
@@ -191,7 +196,7 @@ static void AT86RF212B_TxData(){
 			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
 
 			//Sent full frame, check to see if there is more data on the buffer to send
-			if(bytesToSend == AT86RF212B_MAX_DATA){
+			if(bytesToSend == tmpMaxData){
 				AT86RF212B_TxData();
 			}
 		}
