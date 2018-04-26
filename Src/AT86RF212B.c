@@ -351,6 +351,11 @@ void AT86RF212B_FrameRead(){
 			WriteToOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
 			prevSequenceNumber = pRxData[4];
 		}
+		else{
+			if(IsLogging()){
+				LOG(LOG_LVL_DEBUG, (uint8_t*)"Dropped Dupe Frame\r\n");
+			}
+		}
 	}
 	//Check if it is an ACK
 	else if((pRxData[2] & 0x07) == 2){
