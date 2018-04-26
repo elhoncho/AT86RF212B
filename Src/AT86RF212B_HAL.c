@@ -13,6 +13,7 @@
 
 #include "../Inc/ErrorsAndLogging.h"
 #include "../Inc/Terminal.h"
+#include "../Inc/Buffer.h"
 #include "../Settings/AT86RF212B_Settings.h"
 #include "../Settings/HAL_Settings.h"
 
