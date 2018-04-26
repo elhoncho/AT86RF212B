@@ -189,6 +189,11 @@ static void AT86RF212B_TxData(){
 			//Wait until done transmitting data
 			//TODO: This may affect speed
 			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+
+			//Sent full frame, check to see if there is more data on the buffer to send
+			if(bytesToSend == AT86RF212B_MAX_DATA){
+				AT86RF212B_TxData();
+			}
 		}
 	}
 }
