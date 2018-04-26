@@ -187,7 +187,6 @@ void TerminalRead(){
 			}
 		}
 	}
-	//TODO: Need to find a better way to control this than the newCmd switch
     if(newCmd){
         uint8_t arg[3][22];
         uint8_t argNum = 0;
