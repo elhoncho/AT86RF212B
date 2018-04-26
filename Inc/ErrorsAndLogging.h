@@ -19,6 +19,8 @@ typedef enum{
 }LOG_LVL;
 
 void LOG(LOG_LVL lvl, uint8_t * message);
-void AssertError(uint8_t * fileName, uint8_t lineNumber);
+void AssertError(char* fileName, int lineNumber);
+void ToggleLogging();
+uint8_t IsLogging();
 
 #endif /* MYINC_ERRORS_AND_LOGGING_H_ */

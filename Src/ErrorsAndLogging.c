@@ -16,7 +16,7 @@
 
 #define MIN_LOG_LVL LOG_LVL_INFO
 
-uint8_t logging = 0;
+static uint8_t logging = 0;
 
 void LOG(LOG_LVL lvl, uint8_t * message){
 	if(lvl >= MIN_LOG_LVL){
@@ -24,7 +24,7 @@ void LOG(LOG_LVL lvl, uint8_t * message){
 	}
 }
 
-void AssertError(uint8_t * fileName, uint8_t lineNumber){
+void AssertError(char* fileName, int lineNumber){
 	uint8_t tmpStr[32];
 	sprintf((char*)tmpStr, "Error in file :");
 	LOG(LOG_LVL_ERROR, tmpStr);
@@ -32,4 +32,17 @@ void AssertError(uint8_t * fileName, uint8_t lineNumber){
 	sprintf((char*)tmpStr, "\r\nOn line: %d\r\n", lineNumber);
 	LOG(LOG_LVL_ERROR, tmpStr);
 	//exit(0);
+}
+
+uint8_t IsLogging(){
+	return logging;
+}
+
+void ToggleLogging(){
+	if(logging){
+		logging = 0;
+	}
+	else{
+		logging = 1;
+	}
 }

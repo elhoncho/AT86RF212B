@@ -10,7 +10,7 @@
 
 #include<stdint.h>
 
-typedef void(*functionPointerType)(char *arg1, char *arg2);
+typedef void(*functionPointerType)(uint8_t* arg1, uint8_t* arg2);
 
 void TerminalOpen();
 void TermianlClose();

@@ -39,115 +39,106 @@
 
 #define MAX_STR_LEN 32
 
-//TODO:Globle variables!...probably need to find a better way to do this
-uint8_t volatile newCmd = 0;
-extern uint8_t logging;
-
 struct commandStruct{
-    const char *name;
+    const uint8_t* name;
     functionPointerType execute;
-    const char *help;
+    const uint8_t* help;
 };
 
 //Prototypes for the command functions
-static void CmdClear(char *arg1, char *arg2);
-static void ListCommands(char *arg1, char *arg2);
-static void ToggelDebug(char *arg1, char *arg2);
-static void ReadRegister(char *arg1, char *arg2);
-static void WriteRegister(char *arg1, char *arg2);
-static void GetIDs(char *arg1, char *arg2);
-static void TestBit(char *arg1, char *arg2);
-static void ReadFrame(char *arg1, char *arg2);
-static void RawModeRx(char *arg1, char *arg2);
-static void RawModeTx(char *arg1, char *arg2);
-static void RawModeRxTx(char *arg1, char *arg2);
-static void ExitProgram(char *arg1, char *arg2);
+static void CmdClear(uint8_t* arg1, uint8_t* arg2);
+static void ListCommands(uint8_t* arg1, uint8_t* arg2);
+static void ToggelDebug(uint8_t* arg1, uint8_t* arg2);
+static void ReadRegister(uint8_t* arg1, uint8_t* arg2);
+static void WriteRegister(uint8_t* arg1, uint8_t* arg2);
+static void GetIDs(uint8_t* arg1, uint8_t* arg2);
+static void TestBit(uint8_t* arg1, uint8_t* arg2);
+static void ReadFrame(uint8_t* arg1, uint8_t* arg2);
+static void RawModeRx(uint8_t* arg1, uint8_t* arg2);
+static void RawModeTx(uint8_t* arg1, uint8_t* arg2);
+static void RawModeRxTx(uint8_t* arg1, uint8_t* arg2);
+static void ExitProgram(uint8_t* arg1, uint8_t* arg2);
 
 static const struct commandStruct commands[] ={
-    {"clear", &CmdClear, "Clears the screen"},
-    {"ls", &ListCommands, "Run Help Function"},
-    {"help", &ListCommands, "Run Help Function"},
-	{"logging", &ToggelDebug, "Toggles Logging Mode"},
-	{"rr", &ReadRegister, "Reads a register"},
-	{"rw", &WriteRegister, "Writes a value to a register"},
-	{"id", &GetIDs, "get id's"},
-	{"bt", &TestBit, "Test a bit of a reg"},
-	{"rf", &ReadFrame, "Reads the frame buffer"},
-	{"rmr", &RawModeRx, "Run in raw mode rx"},
-	{"rmt", &RawModeTx, "Run in raw mode tx"},
-	{"rmrt", &RawModeRxTx, "Run in raw mode rx/tx"},
-	{"exit", &ExitProgram, "Exit the Program"},
-    {"",0,""} //End of commands indicator. Must be last.
+    {(uint8_t*)"clear", &CmdClear, (uint8_t*)"Clears the screen"},
+    {(uint8_t*)"ls", &ListCommands, (uint8_t*)"Run Help Function"},
+    {(uint8_t*)"help", &ListCommands, (uint8_t*)"Run Help Function"},
+	{(uint8_t*)"logging", &ToggelDebug, (uint8_t*)"Toggles Logging Mode"},
+	{(uint8_t*)"rr", &ReadRegister, (uint8_t*)"Reads a register"},
+	{(uint8_t*)"rw", &WriteRegister, (uint8_t*)"Writes a value to a register"},
+	{(uint8_t*)"id", &GetIDs, (uint8_t*)"get id's"},
+	{(uint8_t*)"bt", &TestBit, (uint8_t*)"Test a bit of a reg"},
+	{(uint8_t*)"rf", &ReadFrame, (uint8_t*)"Reads the frame buffer"},
+	{(uint8_t*)"rmr", &RawModeRx, (uint8_t*)"Run in raw mode rx"},
+	{(uint8_t*)"rmt", &RawModeTx, (uint8_t*)"Run in raw mode tx"},
+	{(uint8_t*)"rmrt", &RawModeRxTx, (uint8_t*)"Run in raw mode rx/tx"},
+	{(uint8_t*)"exit", &ExitProgram, (uint8_t*)"Exit the Program"},
+    {(uint8_t*)"",0,(uint8_t*)""} //End of commands indicator. Must be last.
 };
 
 //----------------Commands Functions------------------------//
-static void ExitProgram(char *arg1, char *arg2){
+static void ExitProgram(uint8_t *arg1, uint8_t *arg2){
 	exit(0);
 }
 
-static void RawModeTx(char *arg1, char *arg2){
+static void RawModeTx(uint8_t *arg1, uint8_t *arg2){
 	MainControllerSetMode(MODE_RAW_TX);
 }
 
-static void RawModeRx(char *arg1, char *arg2){
+static void RawModeRx(uint8_t *arg1, uint8_t *arg2){
 	MainControllerSetMode(MODE_RAW_RX);
 }
 
-static void RawModeRxTx(char *arg1, char *arg2){
+static void RawModeRxTx(uint8_t *arg1, uint8_t *arg2){
 	MainControllerSetMode(MODE_RAW_RX_TX);
 }
 
-static void ReadFrame(char *arg1, char *arg2){
+static void ReadFrame(uint8_t *arg1, uint8_t *arg2){
 	AT86RF212B_FrameRead();
 }
 
-static void TestBit(char *arg1, char *arg2){
-	char tmpStr[MAX_STR_LEN];
-	sprintf(tmpStr, "%i\r\n", AT86RF212B_BitRead(strtol(arg1, NULL, 16), 0, strtol(arg2, NULL, 10)));
+static void TestBit(uint8_t *arg1, uint8_t *arg2){
+	uint8_t tmpStr[MAX_STR_LEN];
+	sprintf((char*)tmpStr, "%i\r\n", AT86RF212B_BitRead(strtol((char*)arg1, NULL, 16), 0, strtol((char*)arg2, NULL, 10)));
 	TerminalWrite((uint8_t*)tmpStr);
 }
 
-static void GetIDs(char *arg1, char *arg2){
+static void GetIDs(uint8_t *arg1, uint8_t *arg2){
 	AT86RF212B_ID();
 }
 
-static void WriteRegister(char *arg1, char *arg2){
-	char tmpStr[MAX_STR_LEN];
-	sprintf(tmpStr, "0x%02X\r\n", AT86RF212B_RegWrite((uint8_t)strtol(arg1, NULL, 16), (uint8_t)strtol(arg2, NULL, 16)));
+static void WriteRegister(uint8_t *arg1, uint8_t *arg2){
+	uint8_t tmpStr[MAX_STR_LEN];
+	sprintf((char*)tmpStr, "0x%02X\r\n", AT86RF212B_RegWrite(strtol((char*)arg1, NULL, 16), strtol((char*)arg2, NULL, 16)));
 	TerminalWrite((uint8_t*)tmpStr);
 }
 
-static void ReadRegister(char *arg1, char *arg2){
-	char tmpStr[MAX_STR_LEN];
-	sprintf(tmpStr, "0x%02X\r\n", AT86RF212B_RegRead(strtol(arg1, NULL, 16)));
+static void ReadRegister(uint8_t *arg1, uint8_t *arg2){
+	uint8_t tmpStr[MAX_STR_LEN];
+	sprintf((char*)tmpStr, "0x%02X\r\n", AT86RF212B_RegRead(strtol((char*)arg1, NULL, 16)));
 	TerminalWrite((uint8_t*)tmpStr);
 }
 
-static void ToggelDebug(char *arg1, char *arg2){
-    if(logging){
-        logging = 0;
-    }
-    else{
-        logging = 1;
-    }
+static void ToggelDebug(uint8_t *arg1, uint8_t *arg2){
+    ToggleLogging();
 }
 
-static void ListCommands(char *arg1, char *arg2){
-    char tmpStr[MAX_STR_LEN];
+static void ListCommands(uint8_t *arg1, uint8_t *arg2){
+	uint8_t tmpStr[MAX_STR_LEN];
     uint8_t i = 0;
     while(commands[i].execute){
-        strcpy(tmpStr, commands[i].name);
+        strcpy((char*)tmpStr, (char*)commands[i].name);
         TerminalWrite((uint8_t*)tmpStr);
-        strcpy(tmpStr, " - ");
+        strcpy((char*)tmpStr, " - ");
         TerminalWrite((uint8_t*)tmpStr);
-        strcpy(tmpStr, commands[i].help);
+        strcpy((char*)tmpStr, (char*)commands[i].help);
         TerminalWrite((uint8_t*)tmpStr);
-        strcpy(tmpStr,"\r\n");
+        strcpy((char*)tmpStr,"\r\n");
         TerminalWrite((uint8_t*)tmpStr);
         i++;
     }
 }
-static void CmdClear(char *arg1, char *arg2){
+static void CmdClear(uint8_t *arg1, uint8_t *arg2){
     char tmpStr[MAX_STR_LEN];
     strcpy(tmpStr, "\033[2J\033[;H");
     TerminalWrite((uint8_t*)tmpStr);
@@ -172,51 +163,73 @@ void TermianlClose(){
 }
 
 void TerminalRead(){
+	uint8_t tmpChar;
+	uint8_t newCmd = 0;
+	static uint8_t cmdIter = 0;
+	static uint8_t cmdStr[MAX_STR_LEN];
+	uint8_t tmpStr[MAX_STR_LEN];
+
+	while(PopFromInputBuffer(&tmpChar)){
+		if(cmdIter < MAX_STR_LEN){
+			cmdStr[cmdIter] = tmpChar;
+			cmdStr[cmdIter+1] = '\0';
+			cmdIter++;
+			if(tmpChar == '\r' || tmpChar == '\n'){
+				newCmd = 1;
+				cmdIter = 0;
+				break;
+			}
+		}
+		else{
+			if(IsLogging()){
+				ASSERT(0);
+				LOG(LOG_LVL_ERROR, (uint8_t*)"Command string too large\r\n");
+			}
+		}
+	}
 	//TODO: Need to find a better way to control this than the newCmd switch
     if(newCmd){
-        char tmpStr[MAX_STR_LEN];
-        static uint8_t i = 0;
-        char tmpChar;
-
-        char arg[3][22];
+        uint8_t arg[3][22];
+        uint8_t argNum = 0;
+        uint8_t i = 0;
+        uint8_t len = 0;
 
         arg[0][0] = '\0';
         arg[1][0] = '\0';
         arg[2][0] = '\0';
 
-        i = 0;
-        while(PopFromInputBuffer(&tmpChar)){
-            uint8_t len = strlen(arg[i]);
-
+        for(i = 0; i < strlen((char*)cmdStr); i++){
             //Don't store \r or \n or space or .
-            if(tmpChar != 0x0D && tmpChar != 0x0A && tmpChar != 0x20 && tmpChar != 0x2E){
-                arg[i][len] = tmpChar;
-                arg[i][len+1] = '\0';
+            if(cmdStr[i] != 0x0D && cmdStr[i] != 0x0A && cmdStr[i] != 0x20 && cmdStr[i] != 0x2E){
+                arg[argNum][len] = cmdStr[i];
+                arg[argNum][len+1] = '\0';
+                len++;
             }
             //space or . => new argument
-            else if(tmpChar == 0x20 ||  tmpChar == 0x2E){
-                i++;
+            else if(cmdStr[i] == 0x20 ||  cmdStr[i] == 0x2E){
+                argNum++;
+                len = 0;
             }
         }
 
-        if(logging){
-            strcpy(tmpStr, "\r\nArg0: \r\n");
+        if(IsLogging()){
+            strcpy((char*)tmpStr, "\r\nArg0: \r\n");
             LOG(LOG_LVL_INFO, tmpStr);
             LOG(LOG_LVL_INFO, arg[0]);
 
-            strcpy(tmpStr, "\r\nArg1: \r\n");
+            strcpy((char*)tmpStr, "\r\nArg1: \r\n");
             LOG(LOG_LVL_INFO, tmpStr);
 			LOG(LOG_LVL_INFO, arg[1]);
 
-            strcpy(tmpStr, "\r\nArg2: \r\n");
+            strcpy((char*)tmpStr, "\r\nArg2: \r\n");
             LOG(LOG_LVL_INFO, tmpStr);
 			LOG(LOG_LVL_INFO, arg[2]);
         }
 
         i = 0;
-        if(strlen(arg[0]) >= 1){
+        if(strlen((char*)arg[0]) >= 1){
             while(commands[i].execute){
-                if(strcmp(arg[0], commands[i].name) == 0){
+                if(strcmp((char*)arg[0], (char*)commands[i].name) == 0){
                     //Execute Command
                     commands[i].execute(arg[1], arg[2]);
 
@@ -231,15 +244,13 @@ void TerminalRead(){
             }
             //i is set to 0 if a command is found
             if(i != 0){
-                strcpy(tmpStr, "\r\n");
+                strcpy((char*)tmpStr, "\r\n");
                 TerminalWrite((uint8_t*)tmpStr);
 
-                strcpy(tmpStr, "No Command Found \r\n>");
+                strcpy((char*)tmpStr, "No Command Found \r\n>");
                 TerminalWrite((uint8_t*)tmpStr);
             }
         }
-
-        newCmd = 0;
     }
 }
 

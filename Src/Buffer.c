@@ -7,7 +7,6 @@
 #include "../Settings/HAL_Settings.h"
 
 static uint8_t echoInput = 0;
-extern uint8_t newCmd;
 
 typedef struct {
     volatile uint16_t head;
@@ -50,11 +49,6 @@ uint8_t PushToInputBuffer(char rxChar){
 			uint8_t tmpStr[2] = {rxChar, '\0'};
 			WriteToOutputHAL(tmpStr, 2);
 		}
-
-		if(rxChar == '\r' || rxChar == '\n'){
-			newCmd = 1;
-		}
-
 		return CheckBufferCapacity(inputBuffer);
 	}
 	else{
