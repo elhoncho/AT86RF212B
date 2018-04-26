@@ -315,7 +315,7 @@ void HALDelayUs(uint32_t timeUs){
 void ReadInputHAL(){
 #if RASPBERRY_PI
 	char inChar;
-	if(read(0, &inChar, 1) > 0){
+	while(read(0, &inChar, 1) > 0){
 		PushToInputBuffer(inChar);
 	}
 #endif
