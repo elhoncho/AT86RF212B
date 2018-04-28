@@ -58,6 +58,7 @@ static void RawModeRx(uint8_t* arg1, uint8_t* arg2);
 static void RawModeTx(uint8_t* arg1, uint8_t* arg2);
 static void RawModeRxTx(uint8_t* arg1, uint8_t* arg2);
 static void ExitProgram(uint8_t* arg1, uint8_t* arg2);
+static void SendData(uint8_t* arg1, uint8_t* arg2);
 
 static const struct commandStruct commands[] ={
     {(uint8_t*)"clear", &CmdClear, (uint8_t*)"Clears the screen"},
@@ -65,6 +66,7 @@ static const struct commandStruct commands[] ={
     {(uint8_t*)"help", &ListCommands, (uint8_t*)"Run Help Function"},
 	{(uint8_t*)"logging", &ToggelDebug, (uint8_t*)"Toggles Logging Mode"},
 	{(uint8_t*)"rr", &ReadRegister, (uint8_t*)"Reads a register"},
+	{(uint8_t*)"send", &SendData, (uint8_t*)"Sends data"},
 	{(uint8_t*)"rw", &WriteRegister, (uint8_t*)"Writes a value to a register"},
 	{(uint8_t*)"id", &GetIDs, (uint8_t*)"get id's"},
 	{(uint8_t*)"bt", &TestBit, (uint8_t*)"Test a bit of a reg"},
@@ -87,6 +89,14 @@ static void RawModeTx(uint8_t *arg1, uint8_t *arg2){
 
 static void RawModeRx(uint8_t *arg1, uint8_t *arg2){
 	MainControllerSetMode(MODE_RAW_RX);
+}
+
+static void SendData(uint8_t *arg1, uint8_t *arg2){
+	uint16_t length = strlen((char*)arg1);
+    for(uint16_t i=0; i<length; i++){
+    	PushToTxBuffer(arg1[i]);
+    }
+    AT86RF212B_PhyStateChange(TX_ARET_ON);
 }
 
 static void RawModeRxTx(uint8_t *arg1, uint8_t *arg2){

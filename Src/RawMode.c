@@ -35,39 +35,72 @@ void RawModeOpen(){
 	}
 }
 
+#define CODE 0
+#define TXDATA 1
 
 void RawModeMain(){
-	uint8_t dataToSend = 0;
 	uint8_t tmpChar;
-	uint8_t radioMode;
+	static uint8_t radioMode;
+    static uint8_t code[10];
+    static uint8_t iter = 0;
+    static uint8_t length = 0;
+    //0 = waiting for command 1 = tx data
+    static uint8_t mode = CODE;
+    static uint16_t lenReceaved = 0;
 
-	//Push data to txBuffer
-	while(PopFromInputBuffer(&tmpChar)){
-		//TODO: May cause loss of data if the pop is successful but the push fails
-		PushToTxBuffer(tmpChar);
-		dataToSend = 1;
-	}
 
-	while(PopFromRxBuffer(&tmpChar)){
-		WriteToOutputHAL(&tmpChar, 1);
-	}
-	radioMode = MainControllerGetMode();
-
-	if(dataToSend){
-		//If there is data to be sent switch radio to tx mode
-		if(radioMode == MODE_RAW_RX_TX || radioMode == MODE_RAW_TX){
-			if(AT86RF212B_GetState() != TX_ARET_ON){
-				AT86RF212B_PhyStateChange(TX_ARET_ON);
+    switch(mode){
+		case CODE:
+			while(PopFromInputBuffer(&tmpChar)){
+				code[iter] = tmpChar;
+				iter++;
+				if(iter == 5){
+					iter = 0;
+					if(strncmp((char*)code, "TX", 2) == 0){
+						mode = TXDATA;
+						code[5] = '\0';
+						length = atoi((char*)&code[2]);
+						break;
+					}
+					else{
+						//Clear Buffer
+						while(PopFromInputBuffer(&tmpChar));
+					}
+				}
 			}
-		}
-	}
-	//No data to be sent make sure the radio is in RX mode
-	else if(radioMode == MODE_RAW_RX_TX){
-		if(AT86RF212B_GetState() != RX_AACK_ON){
-			AT86RF212B_PhyStateChange(RX_AACK_ON);
-		}
-	}
+			//No data to send so make sure the radio is in RX mode
+			radioMode = MainControllerGetMode();
+			if(radioMode == MODE_RAW_RX_TX){
+				if(AT86RF212B_GetState() != RX_AACK_ON){
+					AT86RF212B_PhyStateChange(RX_AACK_ON);
+				}
+			}
+			break;
+		case TXDATA:
+			if(PopFromInputBuffer(&tmpChar)){
+				PushToTxBuffer(tmpChar);
+				lenReceaved ++;
+			}
+			if(lenReceaved == length){
+				lenReceaved = 0;
+				mode = CODE;
+				//Switch radio to tx mode
+				radioMode = MainControllerGetMode();
+				if(radioMode == MODE_RAW_RX_TX || radioMode == MODE_RAW_TX){
+					if(AT86RF212B_GetState() != TX_ARET_ON){
+						AT86RF212B_PhyStateChange(TX_ARET_ON);
+					}
+				}
+			}
+			break;
+    }
 
+    if(PopFromRxBuffer(&tmpChar)){
+    	WriteToOutputHAL((uint8_t*)"FRAME", 5);
+		while(PopFromRxBuffer(&tmpChar)){
+			WriteToOutputHAL(&tmpChar, 1);
+		}
+    }
 	ReadInputHAL();
 	return;
 }
