@@ -21,7 +21,7 @@ static void 	AT86RF212B_IrqInit ();
 static uint8_t 	AT86RF212B_FrameLengthRead();
 static void 	AT86RF212B_SetPhyMode();
 static void 	AT86RF212B_PhySetChannel();
-static void 	AT86RF212B_WaitForIRQ(uint8_t expectedIRQ);
+static uint8_t 	AT86RF212B_WaitForIRQ(uint8_t expectedIRQ);
 static uint8_t 	StateChangeCheck(uint8_t newState);
 static void 	UpdateState();
 static uint8_t 	IsStateActive();
@@ -166,6 +166,7 @@ static void AT86RF212B_TxData(){
 	uint8_t frame[128];
 	uint8_t txByte = 0;
 	uint8_t bytesToSend = 0;
+	uint8_t status = 0;
 
 	//TODO: This should be the constant AT86RF212B_MAX_DATA however the RaspberryPi is having problems transmitting larger frames
 	//and until that gets resolved a smaller max frame size is being used, this does effect speed as the higher data rates
@@ -193,7 +194,19 @@ static void AT86RF212B_TxData(){
 			sequenceNumber++;
 			//Wait until done transmitting data
 			//TODO: This may affect speed
-			AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+			status = AT86RF212B_WaitForIRQ(TRX_IRQ_TRX_END);
+
+//			//TODO: Currently not getting ACKs so this is not useful
+//			uint8_t txStatus = AT86RF212B_BitRead(SR_TRAC_STATUS);
+//			if(txStatus > 1 || status != 0){
+//				WriteToOutputHAL((uint8_t*)"FAIL.\r\n", 7);
+//				uint8_t tmpStr[10];
+//				sprintf((char*)tmpStr, "%03d\r\n", txStatus);
+//				WriteToOutputHAL(tmpStr, 5);
+//			}
+//			else{
+//				WriteToOutputHAL((uint8_t*)"SUCCE\r\n", 7);
+//			}
 
 			//Sent full frame, check to see if there is more data on the buffer to send
 			if(bytesToSend == tmpMaxData){
@@ -411,6 +424,7 @@ static void AT86RF212B_FrameWrite(uint8_t * pData, uint8_t length, uint8_t seque
 	0x00,
 
 	//FCF !!!BE CAREFUL OF BYTE ORDER, MSB IS ON THE RIGHT IN THE DATASHEET!!!
+	//Ack requested 0x20 + frame type 1 0x01 = 0x21
 	0x21,
 	0x08,
 	//Sequence number
@@ -820,7 +834,7 @@ static void AT86RF212B_UpdateIRQ(){
 	}
 }
 
-static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
+static uint8_t AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 	//Max time in ms to wait for an IRQ before timing out
 	uint32_t maxTime = 100;
 
@@ -832,7 +846,8 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 				ASSERT(0);
 				LOG(LOG_LVL_DEBUG, (uint8_t*)"Timeout while waiting for IRQ\r\n");
 			}
-			return;
+			//Unsuccessful
+			return 1;
 		}
 	}
 	//Clear the interrupt flag
@@ -847,11 +862,14 @@ static void AT86RF212B_WaitForIRQ(uint8_t expectedIRQ){
 			sprintf((char *)tmpStr, "Wrong Interrupt: %02X\r\n", irqState);
 			LOG(LOG_LVL_ERROR, tmpStr);
 		}
-		AT86RF212B_WaitForIRQ(expectedIRQ);
+		uint8_t tmpRet = AT86RF212B_WaitForIRQ(expectedIRQ);
+		return tmpRet;
 	}
 	else if(IsLogging()){
 		LOG(LOG_LVL_DEBUG, (uint8_t*)"Expected IRQ received, exiting loop!\r\n");
 	}
+	//Successful
+	return 0;
 }
 
 static uint8_t StateChangeCheck(uint8_t newState){
