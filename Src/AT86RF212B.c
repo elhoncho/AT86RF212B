@@ -352,36 +352,43 @@ void AT86RF212B_FrameRead(){
 			if(IsLogging()){
 				LOG(LOG_LVL_DEBUG, (uint8_t*)"CRC Passed\r\n");
 			}
-		}
-	}
 
-	//Check if it is a data frame
-	if((pRxData[2] & 0x07) == 1){
-		if(pRxData[4] != prevSequenceNumber){
-			WriteToOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
-			prevSequenceNumber = pRxData[4];
-		}
-		else{
+			//Check if it is a data frame
+			if((pRxData[2] & 0x07) == 1){
+				if(pRxData[4] != prevSequenceNumber){
+					uint8_t tmpStr[8];
+					sprintf((char*)tmpStr, "RX");
+					sprintf((char*)&tmpStr[2], "%03i\r\n", length-AT86RF212B_DATA_OFFSET);
+					WriteToOutputHAL(tmpStr, 7);
+					WriteToOutputHAL(&pRxData[AT86RF212B_DATA_OFFSET], length-AT86RF212B_DATA_OFFSET);
+					WriteToOutputHAL((uint8_t*)"\r\n", 2);
+					prevSequenceNumber = pRxData[4];
+				}
+				else{
+					if(IsLogging()){
+						LOG(LOG_LVL_DEBUG, (uint8_t*)"Dropped Dupe Frame\r\n");
+					}
+				}
+			}
+			//Check if it is an ACK
+			else if((pRxData[2] & 0x07) == 2){
+				//ackReceived = 1;
+			}
+			else{
+				if(IsLogging()){
+					ASSERT(0);
+					LOG(LOG_LVL_ERROR, (uint8_t*)"Unknown Frame Type\r\n");
+				}
+			}
+
 			if(IsLogging()){
-				LOG(LOG_LVL_DEBUG, (uint8_t*)"Dropped Dupe Frame\r\n");
+				LOG(LOG_LVL_INFO, (uint8_t*)"Data Received\r\n");
+				AT86RF212B_PrintBuffer(length+3, pRxData);
 			}
 		}
 	}
-	//Check if it is an ACK
-	else if((pRxData[2] & 0x07) == 2){
-		//ackReceived = 1;
-	}
-	else{
-		if(IsLogging()){
-			ASSERT(0);
-			LOG(LOG_LVL_ERROR, (uint8_t*)"Unknown Frame Type\r\n");
-		}
-	}
 
-	if(IsLogging()){
-		LOG(LOG_LVL_INFO, (uint8_t*)"Data Received\r\n");
-		AT86RF212B_PrintBuffer(length+3, pRxData);
-	}
+
 
 	//Enable preamble detector to start receiving again
 	AT86RF212B_BitWrite(SR_RX_PDT_DIS, 0);

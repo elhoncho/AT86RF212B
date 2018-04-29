@@ -48,24 +48,41 @@ void RawModeMain(){
     static uint8_t mode = CODE;
     static uint16_t lenReceaved = 0;
 
-
     switch(mode){
 		case CODE:
 			while(PopFromInputBuffer(&tmpChar)){
 				code[iter] = tmpChar;
+				code[iter+1] = '\0';
 				iter++;
-				if(iter == 5){
+				if(iter >= 2){
+					if(code[iter-2] == '\r' && code[iter-1] == '\n'){
+						if(iter == 2){
+							iter = 0;
+							//Clear Buffer
+							while(PopFromInputBuffer(&tmpChar));
+							WriteToOutputHAL((uint8_t*)"CLEAR\r\n", 7);
+						}
+						else if(strncmp((char*)code, "TX", 2) == 0){
+							iter = 0;
+							mode = TXDATA;
+							code[5] = '\0';
+							length = atoi((char*)&code[2]);
+							RawModeMain();
+							return;
+						}
+						else{
+							iter = 0;
+							//Clear Buffer
+							while(PopFromInputBuffer(&tmpChar));
+							WriteToOutputHAL((uint8_t*)"ER001\r\n", 7);
+						}
+					}
+				}
+				if(iter == 10){
 					iter = 0;
-					if(strncmp((char*)code, "TX", 2) == 0){
-						mode = TXDATA;
-						code[5] = '\0';
-						length = atoi((char*)&code[2]);
-						break;
-					}
-					else{
-						//Clear Buffer
-						while(PopFromInputBuffer(&tmpChar));
-					}
+					//Clear Buffer
+					while(PopFromInputBuffer(&tmpChar));
+					WriteToOutputHAL((uint8_t*)"ER002\r\n", 7);
 				}
 			}
 			//No data to send so make sure the radio is in RX mode
@@ -84,6 +101,9 @@ void RawModeMain(){
 			if(lenReceaved == length){
 				lenReceaved = 0;
 				mode = CODE;
+				WriteToOutputHAL((uint8_t*)"OK...\r\n", 7);
+				//Clear buffer
+				while(PopFromInputBuffer(&tmpChar));
 				//Switch radio to tx mode
 				radioMode = MainControllerGetMode();
 				if(radioMode == MODE_RAW_RX_TX || radioMode == MODE_RAW_TX){
